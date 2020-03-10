@@ -6,7 +6,7 @@ from matplotlib.ticker import PercentFormatter
 
 
 # pollutant_name = 'NH4y0to2'
-pollutant_name = 'SO4y-1'
+pollutant_name = 'avg_income'
 
 
 # asthma_df = pd.read_csv('data/exposures-4yrs-filtered_race_in1Col.csv')
@@ -28,32 +28,32 @@ width = 0.
 # ax.bar([bwa, bwoa], [hwa.astype(float)/hwa.sum(), hwoa.astype(float)/hwoa.sum()] label=['with asthma', 'w/o asthma'])
 # ax.bar([bwa, bwoa], [hwa.astype(float)/hwa.sum(), hwoa.astype(float)/hwoa.sum()] label=['with asthma', 'w/o asthma'])
 ax.hist([so4yr4_asthma, so4yr4_no_asthma],
-        weights=[np.ones(len(so4yr4_asthma))/len(so4yr4_asthma), np.ones(len(so4yr4_no_asthma))/len(so4yr4_no_asthma)],
+        # weights=[np.ones(len(so4yr4_asthma))/len(so4yr4_asthma), np.ones(len(so4yr4_no_asthma))/len(so4yr4_no_asthma)],
         label=['with asthma', 'w/o asthma'])
-ax.yaxis.set_major_formatter(PercentFormatter(1))
-ax.set_xlabel('pollutant level')
-ax.set_ylabel('percentage of pollutant level (by category)')
+# ax.yaxis.set_major_formatter(PercentFormatter(1))
+ax.set_xlabel('income')
+ax.set_ylabel('Counts of children (by category)')
 ax.legend(loc='upper right')
 # ax.set_title(pollutant_name+'_imputed_data')
 pollutant_list = pollutant_name.split('y')
-def year_str_for_title(yr):
-    if yr == '0':
-        return ''
-    elif int(yr) > 0:
-        return '+' + yr
-    else:
-        return yr
-if 'to' in pollutant_list[-1]:
-    pollutant_start_yr, pollutant_end_yr = pollutant_list[-1].split('to')
-
-    title_start_yr = year_str_for_title(pollutant_start_yr)
-    title_end_yr = year_str_for_title(pollutant_end_yr)
-
-    ax.set_title('Histogram of {} level from (birth year{}) to (birth year{})'.format(pollutant_list[0], title_start_yr, title_end_yr))
-else:
-    pollutant_yr = year_str_for_title(pollutant_list[-1])
-
-    ax.set_title('Histogram of {} level at (birth year{})'.format(pollutant_list[0], pollutant_yr))
+# def year_str_for_title(yr):
+#     if yr == '0':
+#         return ''
+#     elif int(yr) > 0:
+#         return '+' + yr
+#     else:
+#         return yr
+# if 'to' in pollutant_list[-1]:
+#     pollutant_start_yr, pollutant_end_yr = pollutant_list[-1].split('to')
+#
+#     title_start_yr = year_str_for_title(pollutant_start_yr)
+#     title_end_yr = year_str_for_title(pollutant_end_yr)
+#
+#     ax.set_title('Histogram of {} level from (birth year{}) to (birth year{})'.format(pollutant_list[0], title_start_yr, title_end_yr))
+# else:
+#     pollutant_yr = year_str_for_title(pollutant_list[-1])
+#
+#     ax.set_title('Histogram of {} level at (birth year{})'.format(pollutant_list[0], pollutant_yr))
 
 plt.show()
 

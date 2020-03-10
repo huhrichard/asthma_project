@@ -15,6 +15,7 @@ import pandas as pd
 from sklearn.model_selection import GridSearchCV, cross_val_score, KFold
 import os, fnmatch
 from io import StringIO
+from statsmodels.stats.multitest import fdrcorrection
 from decimal import Decimal
 from tabulate import tabulate
 from utils_plot import saveFig
@@ -53,25 +54,14 @@ Reference
 """
 dataDir = os.path.join(os.getcwd(), 'data')  # default unless specified otherwise
 plotDir = os.path.join(os.getcwd(), 'plot')
-output_folder_name = sys.argv[-1]
+# output_fn = sys.argv[-1]
 # output_folder_name = 'act_score'
 # output_folder_name = 'emergency_dept'
 # output_folder_name = 'hospitalize_overnight'
 # output_folder_name = 'regular_medication'
 # output_folder_name = 'regular_asthma_symptoms_past6months'
 
-outputDir = os.path.join(plotDir, output_folder_name)
-if not os.path.exists(outputDir):
-    os.mkdir(outputDir)
-possible_results = ['pos_correlate', 'neg_correlate', 'mixed_profile_sign']
-possibleDirs = []
-# result_dir = os.path.join(plotDir, file_prefix)
-# if not os.path.exists(result_dir):
-#     os.mkdir(result_dir)
-for possible_result in possible_results:
-    possibleDirs.append(os.path.join(outputDir, possible_result))
-    if not os.path.exists(possibleDirs[-1]):
-        os.mkdir(possibleDirs[-1])
+
 
 
 class Data(object): 
@@ -83,9 +73,9 @@ def find(pattern, path):
     result = []
     for root, dirs, files in os.walk(path):
         for name in files:
-            print(name)
+            # print(name)
             if fnmatch.fnmatch(name, pattern):
-                print('matched')
+                # print('matched')
                 result.append(name)
     return result
 
@@ -558,7 +548,22 @@ def runWorkflow(**kargs):
     verbose = kargs.get('verbose', True)
     input_file = kargs.get('input_file', '')
     binary_outcome = kargs.get('binary_outcome', True)
+    output_folder_name = kargs.get('output_folder_name', '')
+    p_val_df = kargs.get('p_val_df', pd.DataFrame({}))
+    # outcome_name = kargs.get('outcome_name', pd.DataFrame({}))
 
+    outputDir = os.path.join(plotDir, output_folder_name)
+    if not os.path.exists(outputDir):
+        os.mkdir(outputDir)
+    possible_results = ['pos_correlate', 'neg_correlate', 'mixed_sign_profile']
+    possibleDirs = []
+    # result_dir = os.path.join(plotDir, file_prefix)
+    # if not os.path.exists(result_dir):
+    #     os.mkdir(result_dir)
+    for possible_result in possible_results:
+        possibleDirs.append(os.path.join(outputDir, possible_result))
+        if not os.path.exists(possibleDirs[-1]):
+            os.mkdir(possibleDirs[-1])
     # 1. define input dataset 
     if verbose: print("(runWorkflow) 1. Specifying input data ...")
     ######################################################
@@ -572,6 +577,7 @@ def runWorkflow(**kargs):
     # input_file = 'exposure_7pollutants_no_impute.csv'
     # input_file = 'exposure_7pollutants_svdImpute.csv'
     file_prefix = input_file.split('.')[0]
+
 
     # result_dir = os.path.join(plotDir, file_prefix)
     # if not os.path.exists(result_dir):
@@ -703,8 +709,8 @@ def runWorkflow(**kargs):
         profile_df = pd.DataFrame({topk_profile_str[idx]: binary_profile})
         regression_x_df = pd.concat([profile_df, confounders_df], axis=1)
         # regression_x_df = profile_df
-        print('')
-        print(metrics.confusion_matrix(binary_profile, np.array(y)))
+        # print('')
+        # print(metrics.confusion_matrix(binary_profile, np.array(y)))
         all_equal_drop_col = []
         for col in regression_x_df:
             unique_value = regression_x_df[col].unique()
@@ -775,14 +781,15 @@ def runWorkflow(**kargs):
         addition lines are written
         """
         profile_coef = result.params.values[0]
+        p_val = result.pvalues.values[0]
         if ('<=' in topk_profile_str[idx] and '>' in topk_profile_str[idx]) or profile_coef == 0:
-            result_dir = possibleDirs[-1]
+            relation_dir = possibleDirs[-1]
         elif ('<=' in topk_profile_str[idx] and profile_coef < 0) or ('>' in topk_profile_str[idx] and profile_coef > 0):
-            result_dir = possibleDirs[0]
+            relation_dir = possibleDirs[0]
         elif ('<=' in topk_profile_str[idx] and profile_coef > 0) or ('>' in topk_profile_str[idx] and profile_coef < 0):
-            result_dir = possibleDirs[1]
+            relation_dir = possibleDirs[1]
 
-        result_dir = os.path.join(result_dir, file_prefix)
+        result_dir = os.path.join(relation_dir, file_prefix)
 
 
 
@@ -790,42 +797,50 @@ def runWorkflow(**kargs):
 
         out_path = os.path.join(result_dir, "occur_{}_{}_coef_{:.3e}_pval={:.3e}.csv".format(profile_occurrence,
                                                                                          topk_profile_str[idx],
-                                                                                    result.params.values[0],
-                                                                                 result.pvalues.values[0]))
+                                                                                    profile_coef,
+                                                                                 p_val))
 
 
 
         # print(out_path)
         # result_summary.as_csv(out_path)
-        p_val = result.pvalues.values[0]
-        if p_val < 0.05:
 
-            if not os.path.exists(result_dir):
-                os.mkdir(result_dir)
-            opposite_profile = topk_profile_str[idx]
+        # profile_coef
+        #
 
-            opposite_profile = opposite_profile.replace('<=', 'larger')
-            opposite_profile = opposite_profile.replace('>', 'smaller')
-            opposite_profile = opposite_profile.replace('larger', '>')
-            opposite_profile = opposite_profile.replace('smaller', '<=')
+        if not os.path.exists(result_dir):
+            os.mkdir(result_dir)
+        opposite_profile = topk_profile_str[idx]
 
-            opposite_files = find('occur_*{}_coef*.csv'.format(opposite_profile), result_dir)
-            opposite_files = [f for f in opposite_files if ' ' not in f]
-            print(topk_profile_str[idx], opposite_profile, opposite_files)
-            if len(opposite_files) == 0:
-                for single_pollutant_profile in topk_profile_str[idx].split(' '):
-                    if '<=' in single_pollutant_profile:
-                        pollutant_name, thres = single_pollutant_profile.split('<=')
-                    elif '>' in single_pollutant_profile:
-                        pollutant_name, thres = single_pollutant_profile.split('>')
-                    if binary_outcome:
-                        label_for_hist = ['{}(Yes)'.format(output_folder_name),
-                                          '{}(No)'.format(output_folder_name)]
-                        plot_histogram(whole_df, result_dir, pollutant_name=pollutant_name, thres=thres,
-                                       label_plot=label_for_hist)
-                    else:
-                        plot_scatter(whole_df, result_dir, pollutant_name=pollutant_name, thres=thres)
-                        plot_hist2d(whole_df, result_dir, pollutant_name=pollutant_name, thres=thres)
+        opposite_profile = opposite_profile.replace('<=', 'larger')
+        opposite_profile = opposite_profile.replace('>', 'smaller')
+        opposite_profile = opposite_profile.replace('larger', '>')
+        opposite_profile = opposite_profile.replace('smaller', '<=')
+
+        opposite_files = find('occur_*{}_coef*.csv'.format(opposite_profile), result_dir)
+        opposite_files = [f for f in opposite_files if ' ' not in f]
+        print(topk_profile_str[idx], opposite_profile, opposite_files)
+        if len(opposite_files) == 0:
+            cols = p_val_df.columns
+            p_val_df.append({cols[0]: topk_profile_str[idx],
+                             cols[1]: output_folder_name,
+                             cols[2]: p_val,
+                             cols[3]: relation_dir,
+                             cols[4]: profile_coef}, ignore_index=True)
+            for single_pollutant_profile in topk_profile_str[idx].split(' '):
+                if '<=' in single_pollutant_profile:
+                    pollutant_name, thres = single_pollutant_profile.split('<=')
+                elif '>' in single_pollutant_profile:
+                    pollutant_name, thres = single_pollutant_profile.split('>')
+                if binary_outcome:
+                    label_for_hist = ['{}(Yes)'.format(output_folder_name),
+                                      '{}(No)'.format(output_folder_name)]
+                    plot_histogram(whole_df, result_dir, pollutant_name=pollutant_name, thres=thres,
+                                   label_plot=label_for_hist)
+                else:
+                    plot_scatter(whole_df, result_dir, pollutant_name=pollutant_name, thres=thres)
+                    plot_hist2d(whole_df, result_dir, pollutant_name=pollutant_name, thres=thres)
+            if p_val < 0.05:
                 f = open(out_path, 'w')
                 for table in result_summary.tables:
                     #     print(type(table))
@@ -868,12 +883,25 @@ def runWorkflow(**kargs):
     # print("> Top {} features:\n{}\n".format(topk_vars, sorted_features[:topk_vars]))
     
 
-    return
+    return p_val_df
 
 if __name__ == "__main__":
     # file_format = 'act_score_7pollutants_no_impute_*.csv'
+    # binary_out = False if 'True' != sys.argv[-2] else True
+    outcome_binary_dict = {
+                            'act_score':False,
+                            'age_greaterthan5_diagnosed_asthma': True,
+                            'age_diagnosed_asthma': False,
+                            'daily_controller_past6months': True,
+                            'emergency_dept': True,
+                            'emergency_dept_pastyr_count': False,
+                            'hospitalize_overnight': True,
+                            'hospitalize_overnight_pastyr_count': False,
+                            'regular_asthma_symptoms_past6months': True,
+                           'regular_asthma_symptoms_daysCount_pastWeek': False
+                           }
 
-    file_format = '{}_7pollutants_no_impute_*.csv'.format(output_folder_name)
+
     # file_format = 'emergency_dept_7pollutants_no_impute_*.csv'
     # file_format = 'hospitalize_overnight_7pollutants_no_impute_*.csv'
     # file_format = 'regular_medication_7pollutants_no_impute_*.csv'
@@ -883,11 +911,23 @@ if __name__ == "__main__":
     # file_format = 'exposure_7pollutants_no_impute_y-1.csv'
 
 
-
+    pvalue_df = pd.DataFrame(columns=['profile', 'outcome', 'p_val', 'relation', 'coef'])
     path = 'data'
-    file_list = find(file_format, path)
-    binary_out = False if 'True' != sys.argv[-2] else True
-    print(binary_out)
-    for file in file_list:
-        print(file)
-        runWorkflow(input_file=file, binary_outcome=binary_out)
+
+    for outcome, binary_out in outcome_binary_dict.items():
+        file_format = '{}_7pollutants_no_impute_*.csv'.format(outcome)
+        file_list = find(file_format, path)
+        for file in file_list:
+            print(file)
+            pvalue_df = runWorkflow(input_file=file,
+                                    binary_outcome=binary_out,
+                                    output_folder_name=outcome,
+                                    p_val_df=pvalue_df,
+                                    # outcome_name = outcome
+                                    )
+
+    p_val_col = pvalue_df['p_val'].values
+    fdr = fdrcorrection(p_val_col, method='fdr_bh')
+    pvalue_df.insert(2, "fdr", fdr, True)
+    pvalue_df.to_csv(index=False, header=True)
+    print(fdr)

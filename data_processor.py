@@ -278,7 +278,12 @@ def load_merge(vars_matrix='exposures-4yrs.csv',
     # outcome = 'Do you regularly use an asthma medication (one that has been prescribed by a physician for regular use)?'
     # outcome = 'In the past 6 months, have you had regular (2/week) asthma symptoms?  '
     # outcome = 'In the past 6 mos, have you been on a daily controller asthma medication (e.g. Qvar, Flovent, Advair, Symbicort, Singulair)?'
-    outcome = 'At what age (in years) were you diagnosed with asthma? '
+    # outcome = 'At what age (in years) were you diagnosed with asthma? '
+    # outcome = 'How many times in the past year have you gone to the emergency department for asthma? '
+    # outcome = 'How many times in the past year have you been hospitalized over night?'
+    outcome = 'During the past week, how many days have you had asthma symptoms (e.g. shortness of breath, wheezing, chest tightness)?'
+
+
 
     gender = 'Gender'
     race = 'Race'
@@ -457,8 +462,8 @@ def load_merge(vars_matrix='exposures-4yrs.csv',
     # assert asthma_df.shape[1] == len(col_names)
     print(tabulate(asthma_df.head(5), headers='keys', tablefmt='psql'))
 
-    asthma_df.loc[asthma_df[outcome] < 5, outcome] = 0
-    asthma_df.loc[asthma_df[outcome] >= 5, outcome] = 1
+    # asthma_df.loc[asthma_df[outcome] < 5, outcome] = 0
+    # asthma_df.loc[asthma_df[outcome] >= 5, outcome] = 1
 
     # rename
     # dfl = dfl.rename(columns={primary_key: generic_key, label: labelmap[label]})
@@ -562,7 +567,11 @@ def test(**kargs):
                          range(2), range(3), range(4), range(5),
                          range(-1, 2), range(-1, 3), range(-1, 4), range(-1, 5)]
     # output_name = 'regular_asthma_symptoms_past6months'
-    output_name = 'age_greaterthan5_diagnosed_asthma'
+    # output_name = 'age_greaterthan5_diagnosed_asthma'
+    # output_name = 'age_diagnosed_asthma'
+    # output_name = 'emergency_dept_pastyr_count'
+    # output_name = 'hospitalize_overnight_pastyr_count'
+    output_name = 'regular_asthma_symptoms_daysCount_pastWeek'
     for time_window in time_windows_list:
         load_merge(vars_matrix='exposures-4yrs.csv',
                    label_matrix='nasal_biomarker_asthma1019.csv',
