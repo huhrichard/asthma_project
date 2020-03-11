@@ -18,7 +18,7 @@ from io import StringIO
 from statsmodels.stats.multitest import fdrcorrection
 from decimal import Decimal
 from tabulate import tabulate
-from utils_plot import saveFig
+# from utils_plot import saveFig
 from matplotlib.ticker import PercentFormatter
 plt.rcParams.update({'font.size': 12})
 params = {'mathtext.default': 'regular' }
@@ -891,15 +891,15 @@ if __name__ == "__main__":
     # binary_out = False if 'True' != sys.argv[-2] else True
     outcome_binary_dict = {
                             'act_score':False,
-                            # 'age_greaterthan5_diagnosed_asthma': True,
-                            # 'age_diagnosed_asthma': False,
-                            # 'daily_controller_past6months': True,
-                            # 'emergency_dept': True,
-                            # 'emergency_dept_pastyr_count': False,
-                            # 'hospitalize_overnight': True,
-                            # 'hospitalize_overnight_pastyr_count': False,
-                            # 'regular_asthma_symptoms_past6months': True,
-                           # 'regular_asthma_symptoms_daysCount_pastWeek': False
+                            'age_greaterthan5_diagnosed_asthma': True,
+                            'age_diagnosed_asthma': False,
+                            'daily_controller_past6months': True,
+                            'emergency_dept': True,
+                            'emergency_dept_pastyr_count': False,
+                            'hospitalize_overnight': True,
+                            'hospitalize_overnight_pastyr_count': False,
+                            'regular_asthma_symptoms_past6months': True,
+                           'regular_asthma_symptoms_daysCount_pastWeek': False
                            }
 
 
