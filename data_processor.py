@@ -6,7 +6,7 @@ from pandas import DataFrame
 import pandas as pd
 from tabulate import tabulate
 import sklearn.preprocessing as preprocessing
-from fancyimpute import KNN, SoftImpute, BiScaler, IterativeSVD, NuclearNormMinimization
+# from fancyimpute import KNN, SoftImpute, BiScaler, IterativeSVD, NuclearNormMinimization
 import datetime
 import numpy as np
 now = datetime.datetime.now()
