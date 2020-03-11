@@ -822,11 +822,12 @@ def runWorkflow(**kargs):
         print(topk_profile_str[idx], opposite_profile, opposite_files)
         if len(opposite_files) == 0:
             cols = p_val_df.columns
-            p_val_df.append({cols[0]: topk_profile_str[idx],
+            p_val_df = p_val_df.append({cols[0]: topk_profile_str[idx],
                              cols[1]: output_folder_name,
                              cols[2]: p_val,
-                             cols[3]: relation_dir,
+                             cols[3]: relation_dir.split('/')[-1],
                              cols[4]: profile_coef}, ignore_index=True)
+            print(p_val_df)
             for single_pollutant_profile in topk_profile_str[idx].split(' '):
                 if '<=' in single_pollutant_profile:
                     pollutant_name, thres = single_pollutant_profile.split('<=')
@@ -890,15 +891,15 @@ if __name__ == "__main__":
     # binary_out = False if 'True' != sys.argv[-2] else True
     outcome_binary_dict = {
                             'act_score':False,
-                            'age_greaterthan5_diagnosed_asthma': True,
-                            'age_diagnosed_asthma': False,
-                            'daily_controller_past6months': True,
-                            'emergency_dept': True,
-                            'emergency_dept_pastyr_count': False,
-                            'hospitalize_overnight': True,
-                            'hospitalize_overnight_pastyr_count': False,
-                            'regular_asthma_symptoms_past6months': True,
-                           'regular_asthma_symptoms_daysCount_pastWeek': False
+                            # 'age_greaterthan5_diagnosed_asthma': True,
+                            # 'age_diagnosed_asthma': False,
+                            # 'daily_controller_past6months': True,
+                            # 'emergency_dept': True,
+                            # 'emergency_dept_pastyr_count': False,
+                            # 'hospitalize_overnight': True,
+                            # 'hospitalize_overnight_pastyr_count': False,
+                            # 'regular_asthma_symptoms_past6months': True,
+                           # 'regular_asthma_symptoms_daysCount_pastWeek': False
                            }
 
 
@@ -927,7 +928,8 @@ if __name__ == "__main__":
                                     )
 
     p_val_col = pvalue_df['p_val'].values
-    fdr = fdrcorrection(p_val_col, method='fdr_bh')
-    pvalue_df.insert(2, "fdr", fdr, True)
-    pvalue_df.to_csv(index=False, header=True)
+    rejected, fdr = fdrcorrection(p_val_col)
     print(fdr)
+    no_cols = len(pvalue_df.columns)
+    pvalue_df.insert(no_cols, "fdr", fdr, True)
+    pvalue_df.to_csv('fdr.csv', index=False, header=True)
