@@ -320,7 +320,7 @@ def analyze_path(X, y, model=None, p_grid={}, feature_set=[], n_trials=100, n_tr
                              create_dir=True, index=0, binary_outcome=True,  **kargs):
     # from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor 
     from sklearn.model_selection import train_test_split # Import train_test_split function
-    from utils_tree import visualize, count_paths, count_paths2, count_features2, \
+    # from utils_tree import visualize, count_paths, count_paths2, count_features2, \
         get_feature_threshold_tree, count_paths_with_thres_sign
     import time
     
@@ -380,7 +380,7 @@ def analyze_path(X, y, model=None, p_grid={}, feature_set=[], n_trials=100, n_tr
             if verbose: print("... building {} versions of the model: {}".format(n_trials, model.get_params()) )
             if validate_tree: 
                 fild_prefix = "{id}-{index}".format(id=experiment_id, index=i)
-                graph = visualize(model, feature_set, labels, file_name=file_prefix, ext='tif')
+                # graph = visualize(model, feature_set, labels, file_name=file_prefix, ext='tif')
                 
                 # display the tree in the notebook
                 # Image(graph.create_png())  # from IPython.display import Image
