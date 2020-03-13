@@ -927,9 +927,13 @@ if __name__ == "__main__":
                                     p_val_df=pvalue_df,
                                     # outcome_name = outcome
                                     )
-
+    print('before dropped', pvalue_df.shape)
+    pvalue_df.dropna(axis=0, how='any', inplace=True)
+    print('after dropped', pvalue_df.shape)
     p_val_col = pvalue_df['p_val'].values
+
     rejected, fdr = fdrcorrection(p_val_col)
+
     print(fdr)
     no_cols = len(pvalue_df.columns)
     pvalue_df.insert(no_cols, "fdr", fdr, True)
