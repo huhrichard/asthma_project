@@ -8,6 +8,4 @@
 #BSUB -eo asthma.stderr
 #BSUB -R rusage[mem=32000]
 
-module purge
-module load python
 python exposure_analyzer.py
