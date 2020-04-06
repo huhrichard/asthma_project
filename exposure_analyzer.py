@@ -53,7 +53,8 @@ Reference
 
 """
 dataDir = os.path.join(os.getcwd(), 'data')  # default unless specified otherwise
-plotDir = os.path.join(os.getcwd(), 'plot')
+# plotDir = os.path.join(os.getcwd(), 'plot')
+plotDir = os.path.join(os.getcwd(), 'plot/nata_birth_year')
 # output_fn = sys.argv[-1]
 # output_folder_name = 'act_score'
 # output_folder_name = 'emergency_dept'
@@ -305,13 +306,18 @@ def classify(X, y, params={}, random_state=0, binary_outcome=True, **kargs):
     model.fit(X, y)
 
     path = model.cost_complexity_pruning_path(X, y)
+    # print(path)
     ccp_alphas, impurities = path.ccp_alphas, path.impurities
-    cv_split = KFold(n_splits=10, shuffle=True, random_state=random_state)
-    final_tree = GridSearchCV(estimator=model, param_grid={'ccp_alpha':ccp_alphas[:-1][ccp_alphas[:-1]>0]}, cv=cv_split)
-    final_tree.fit(X, y)
+    if len(ccp_alphas) <= 1:
+        print('Only 0/1 ccp_alpha value')
+        return model
+    else:
+        cv_split = KFold(n_splits=10, shuffle=True, random_state=random_state)
+        final_tree = GridSearchCV(estimator=model, param_grid={'ccp_alpha':ccp_alphas[:-1][ccp_alphas[:-1]>0]}, cv=cv_split)
+        final_tree.fit(X, y)
 
 
-    return final_tree.best_estimator_
+        return final_tree.best_estimator_
 
 
 
@@ -470,7 +476,7 @@ def get_median_of_paths_threshold(paths_thres):
         paths_median_threshold[path] = np.median(np.array(threshold_list), axis=0)
     return paths_median_threshold
 
-def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep=" "):
+def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\t"):
     topk_profile_with_value_str = []
 
     for k, (path, count) in enumerate(sorted_paths[:topk]):
@@ -478,12 +484,12 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep=" "):
         profile_str = ""
         if count > 10:
             for idx, pollutant in enumerate(path.split(sep)):
-                profile_str += " {}{:.3e} ".format(pollutant, paths_thres[path][idx])
+                profile_str += " {}{:.3e}{}".format(pollutant, paths_thres[path][idx], sep)
                 # plot_histogram(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
                 # plot_scatter(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
                 # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
 
-            print_str = "{}th paths ({}):{}".format(k, count, profile_str[:-1])
+            print_str = "{}th paths ({}):{}".format(k, count, profile_str[:-2])
             topk_profile_with_value_str.append(profile_str[1:-1])
             print(print_str)
         else:
@@ -618,6 +624,7 @@ def runWorkflow(**kargs):
                                                # col_target='Outcome',
                                                confounding_vars=confounding_vars,
                                                verbose=True)
+    # features = [f for f in features]
 
     # 2. define model (e.g. decision tree)
     if verbose: print("(runWorkflow) 2. Define model (e.g. decision tree and its parameters) ...")
@@ -829,7 +836,7 @@ def runWorkflow(**kargs):
                              cols[3]: relation_dir.split('/')[-1],
                              cols[4]: profile_coef}, ignore_index=True)
             print(p_val_df)
-            for single_pollutant_profile in topk_profile_str[idx].split(' '):
+            for single_pollutant_profile in topk_profile_str[idx].split('\t'):
                 if '<=' in single_pollutant_profile:
                     pollutant_name, thres = single_pollutant_profile.split('<=')
                 elif '>' in single_pollutant_profile:
@@ -891,7 +898,8 @@ if __name__ == "__main__":
     # file_format = 'act_score_7pollutants_no_impute_*.csv'
     # binary_out = False if 'True' != sys.argv[-2] else True
     outcome_binary_dict = {
-                            'act_score':False,
+                            'asthma': True,
+                            'asthma(act_score)':False,
                             'age_greaterthan5_diagnosed_asthma': True,
                             'age_diagnosed_asthma': False,
                             'daily_controller_past6months': True,
@@ -917,7 +925,8 @@ if __name__ == "__main__":
     path = 'data'
 
     for outcome, binary_out in outcome_binary_dict.items():
-        file_format = '{}_7pollutants_no_impute_*.csv'.format(outcome)
+        # file_format = '{}_7pollutants_no_impute_*.csv'.format(outcome)
+        file_format = '{}_NATA_birth_yr.csv'.format(outcome)
         file_list = find(file_format, path)
         for file in file_list:
             print(file)

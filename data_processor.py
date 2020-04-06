@@ -562,6 +562,294 @@ def load_merge(vars_matrix='exposures-4yrs.csv',
 
     return exposure_df
 
+
+def load_merge_income_only(
+               # label_matrix='nasal_biomarker_asthma1019.csv',
+               label_matrix='nasal_biomarker_asthma1019.csv',
+               avg_income_matrix='Zip_avg_income.csv',
+               no2_matrix='NO2_Zipcode.csv',
+               pm25_matrix='PM2.5_Zipcode.csv',
+               output_matrix='exposures-4yrs-asthma.csv',
+               backup=False, save=True, verify=False, sep=',',
+               tImputation=True, time_window=0,
+               outcome_limited_with_asthma=False,
+               binary_outcome=True):
+    from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+    from shutil import copyfile
+    from sklearn.experimental import enable_iterative_imputer
+    # from sklearn.impute import IterativeImputer
+
+    null_threshold = 0.8
+    generic_key = 'ID'
+    # tImputation = True
+
+    # A. load variables
+    primary_key = 'Study.ID'
+    droplist_vars = ['DoB', 'Zipcode', ]  # 'Zipcode',  'Gender'
+
+    # ... DoB needs further processing
+    categorical_vars = ['Zipcode', 'Gender']
+
+    # fpath_vars = os.path.join(dataDir, vars_matrix)
+    # assert os.path.exists(fpath_vars), "(load_merge) Invalid path to the variable matrix"
+    # exposure_df = pd.read_csv(fpath_vars, header=0, sep=sep)
+    # print("(load_merge) dim(dfv): {} | vars:\n... {}\n".format(exposure_df.shape, exposure_df.columns.values))
+
+    # backup
+    # if backup:
+    #     vars_matrix_bk = "{}.bk".format(vars_matrix)
+    #     fpath_vars_bk = os.path.join(dataDir, vars_matrix_bk)
+    #     copyfile(fpath_vars, fpath_vars_bk)
+    #     print("... copied {} to {} as a backup".format(vars_matrix, vars_matrix_bk))
+
+    # transform
+    # msg = ''
+    # le = LabelEncoder()
+    # dfvc = exposure_df[categorical_vars]
+    # msg += "... original dfvc:\n"
+    # msg += tabulate(dfvc.head(5), headers='keys', tablefmt='psql') + '\n'
+    #
+    # dfvc2 = dfvc.apply(le.fit_transform)
+    # msg += "... transformed dfvc:\n"
+    # msg += tabulate(dfvc2.head(5), headers='keys', tablefmt='psql')
+    # exposure_df[categorical_vars] = dfvc2[categorical_vars]
+
+    # mapping
+    # if verify:
+    #     for cvar in categorical_vars:
+    #         mapping = dict(zip(dfvc[cvar], dfvc2[cvar]))
+    #         cols = [cvar, '{}_numeric'.format(cvar)]
+    #         dfmap = DataFrame(mapping, columns=cols)
+    #         msg += tabulate(dfmap.head(10), headers='keys', tablefmt='psql') + '\n'
+    #
+    #         uvals = dfvc[cvar].unique()
+    #         for uval in uvals:
+    #             print("... {} | {} -> {}".format(cvar, uval, mapping[uval]))
+    #
+    # # drop columns
+    # exposure_df = exposure_df.drop(droplist_vars, axis=1)
+    #
+    # # rename ID column
+    # exposure_df = exposure_df.rename(columns={primary_key: generic_key})
+    # msg += "... full transformed data:\n"
+    # msg += tabulate(exposure_df.head(3), headers='keys', tablefmt='psql') + '\n'
+    #
+    # msg += "... final dim(vars_matrix): {} | vars:\n... {}\n".format(exposure_df.shape, exposure_df.columns.values)
+    # N0 = exposure_df.shape[0]
+    # assert generic_key in exposure_df.columns
+    # print(msg)
+    #
+    # # remove rows with all NaN?
+    # # null_threshold = 0.8
+    # msg += "... dropping rows with predominently null values (thresh={})\n".format(null_threshold)
+    # Nu, Ni = exposure_df.shape
+    #
+    # # if tDropNA:
+    # Nth = int(Ni * null_threshold)  # Keep only the rows with at least Nth non-NA values.
+    # msg += "...... keeping only rows with >= {} non-NA values\n".format(Nth)
+    # # dfv.dropna(thresh=Nth, axis=0, inplace=True) # how='all',
+    #
+    # # Richard: NA is dropped here
+    # exposure_df.dropna(how='any', inplace=True)
+    # # print('exposure_df #cols:', exposure_df.)
+    # # exposure_df.dropna(thresh=int(0.8*20), axis=0, inplace=True)
+    # # exposure_df.dropna(how='any', axis=0, inplace=True)
+    # # msg += "> after dropping rows with predominently null, n_rows: {} -> {} | dim(dfv): {}\n".format(N0, exposure_df.shape[0], exposure_df.shape)
+    #
+    # if tImputation:
+    #     msg += "... applying multivarite data imputation\n"
+    #     # imp = IterativeImputer(max_iter=60, random_state=0)
+    #     imp = IterativeSVD()
+    #     # imp = SoftImpute()
+    #     # imp = NuclearNormMinimization()
+    #     drop_list = [generic_key, 'Gender']
+    #     dfx = exposure_df.drop(drop_list, axis=1)
+    #     features = dfx.columns
+    #     X = dfx.values
+    #     print(X.shape)
+    #     y = exposure_df[drop_list].values
+    #     print(y)
+    #
+    #     X = imp.fit_transform(X)
+    #     exposure_df = DataFrame(X, columns=features)
+    #     dropped_df = DataFrame(y, columns=drop_list)
+    #     exposure_df[drop_list] = dropped_df
+    #     # assert exposure_df.shape[0] == exposure_df.dropna(how='any').shape[0], "dfv.shape[0]: {}, dfv.dropna.shape[0]: {}".format(exposure_df.shape[0], exposure_df.dropna(how='any').shape[0])
+    #
+    # print(exposure_df.shape)
+    ####################################################
+    # B. load labels (from yet another file)
+    # Richard: TODO: Adding confounding factors here to load
+    primary_key = 'Study ID'
+    age = "Today's age: (years)"
+    label = 'Has a doctor ever diagnosed you with asthma?'
+    # outcome = 'ACT score'
+
+    # outcome = 'Have you ever needed to go to the emergency department for asthma?'
+    # outcome = 'Have you ever needed to be hospitalized over night for asthma?'
+    # outcome = 'Do you regularly use an asthma medication (one that has been prescribed by a physician for regular use)?'
+    outcome = 'In the past 6 months, have you had regular (2/week) asthma symptoms?  '
+    # outcome = 'In the past 6 mos, have you been on a daily controller asthma medication (e.g. Qvar, Flovent, Advair, Symbicort, Singulair)?'
+    # outcome = 'At what age (in years) were you diagnosed with asthma? '
+    # outcome = 'How many times in the past year have you gone to the emergency department for asthma? '
+    # outcome = 'How many times in the past year have you been hospitalized over night?'
+    # outcome = 'During the past week, how many days have you had asthma symptoms (e.g. shortness of breath, wheezing, chest tightness)?'
+
+    gender = 'Gender'
+    race = 'Race'
+
+    # fever_sym = "Do you currently have hay fever symptoms (runny, stuffy nose accompanied by sneezing and itching when you did not have a cold or flu--sometimes called 'allergies')?"
+
+    # only take these columns
+    if outcome_limited_with_asthma:
+        labelmap = {
+            outcome: 'label',
+            age: 'age',
+            gender: 'gender',
+            # race: 'race',
+            # fever_sym: 'fever_symptom'
+        }
+        col_names = [primary_key, label, age, gender, outcome
+                     # race
+                     ]
+        categorical_vars = [
+            gender,
+            # race
+        ]
+        if binary_outcome:
+            categorical_vars.append(outcome)
+    else:
+        labelmap = {
+            label: 'label',
+            age: 'age',
+            gender: 'gender',
+            # race: 'race',
+            # fever_sym: 'fever_symptom'
+        }
+        col_names = [primary_key, label, age, gender
+                     # race
+                     ]
+        categorical_vars = [
+            label,
+            gender,
+            # race
+        ]
+
+    # ... use the simpler new variable names?
+
+    fpath_labels = os.path.join(dataDir, label_matrix)
+    assert os.path.exists(fpath_labels), "(load_merge) Invalid path to the label matrix"
+    asthma_df = pd.read_csv(fpath_labels, header=0, sep=sep)
+
+    # Race need to be one-hot encoded
+    one_hot_encoded_cols = ["Race"]
+
+    one_hot_encoded_df = pd.get_dummies(asthma_df[one_hot_encoded_cols], prefix=one_hot_encoded_cols)
+
+    zip_code_df = asthma_df[['What is your zip code?']]
+
+
+    asthma_df = asthma_df[col_names]
+    if outcome_limited_with_asthma:
+        asthma_df = asthma_df[asthma_df[label] == 'Yes']
+        asthma_df.drop(columns=[label], inplace=True)
+    asthma_df.dropna(how='any', axis=0, inplace=True)
+    # assert asthma_df.shape[1] == len(col_names)
+    print(tabulate(asthma_df.head(5), headers='keys', tablefmt='psql'))
+
+    # asthma_df.loc[asthma_df[outcome] < 5, outcome] = 0
+    # asthma_df.loc[asthma_df[outcome] >= 5, outcome] = 1
+
+    # rename
+    # dfl = dfl.rename(columns={primary_key: generic_key, label: labelmap[label]})
+    # print("(load_merge) dim(dfl): {} | cols:\n... {}\n".format(dfl.shape, dfl.columns.values))
+
+    # transform
+    msg = ''
+    le = LabelEncoder()
+    dflc = asthma_df[categorical_vars]
+    msg += "... original dflc:\n"
+    msg += tabulate(dflc.head(5), headers='keys', tablefmt='psql') + '\n'
+    print(msg)
+
+    # dflc2 = dflc.apply(le.fit_transform)  # log: '<' not supported between instances of 'str' and 'float'
+
+    # transform column by column
+    cols_encoded = {cvar: {} for cvar in categorical_vars}
+    for cvar in categorical_vars:
+        cvar_encoded = '{}_numeric'.format(cvar)
+        asthma_df[cvar] = le.fit_transform(asthma_df[cvar].astype(str))
+
+        # keep track of mapping
+
+        cols_encoded[cvar] = {label: index for index, label in enumerate(le.classes_)}  # encoded value -> name
+
+    # dfl[categorical_vars] = dflc2[categorical_vars]
+    print(cols_encoded)
+    # mapping
+    if verify:
+        msg += "> verifying the (value) encoding ...\n"
+        for cvar in categorical_vars:
+            mapping = cols_encoded[cvar]
+            for label, index in mapping.items():
+                print("... {} | {} -> {}".format(cvar, label, index))
+
+                # rename
+    colmap = {primary_key: generic_key}
+    colmap.update(labelmap)
+    msg += "> renaming columns via {}\n".format(colmap)
+    asthma_df = asthma_df.rename(columns=colmap)
+    msg += "... transformed dflc:\n"
+    msg += tabulate(asthma_df.head(5), headers='keys', tablefmt='psql') + '\n'
+    ##################################################
+    # Richard: add to merge with avg income and race here
+    zip_income_df = pd.read_csv(os.path.join(dataDir, avg_income_matrix))
+    # zip_income_df = zip_income_df[['zip', 'Avg_inc']]
+    zip_inc_mapping = dict(zip_income_df[['zip', 'Avg_Inc']].values)
+
+    asthma_df['avg_income'] = zip_code_df['What is your zip code?'].map(zip_inc_mapping)
+
+    asthma_df = pd.concat([asthma_df, one_hot_encoded_df], axis=1)
+    asthma_df.dropna(inplace=True)
+    ###################################################
+    # print(exposure_df[generic_key])
+    #
+    # # exposure_df = pd.merge(exposure_df, asthma_df, on=generic_key, how='inner')
+    # # exposure_df = pd.merge(exposure_df, pollutant_cat_df, on=generic_key, how='inner')
+    # exposure_df = pd.merge(asthma_df, pollutant_cat_df, on=generic_key, how='inner')
+    # exposure_df.dropna(how='any', inplace=True)
+    # print(exposure_df.shape)
+    #
+    # # merge
+    # msg += "> merging variable matrix and label matrix ...\n"
+    #
+    # # finally drop ID columns so that only explanatory and response variables remain
+    # # exposure_df = exposure_df.drop([generic_key, 'birth_year'], axis=1)
+    # exposure_df = exposure_df.drop(['birth_year'], axis=1)
+    #
+    # msg += "... final dim(vars_matrix) after including labels: {} | vars:\n... {}\n".format(exposure_df.shape,
+    #                                                                                         exposure_df.columns.values)
+    # # assert exposure_df.shape[0] == N0, "Some IDs do not have data? prior to join n={}, after join n={}".format(N0,
+    # #                                                                                                            exposure_df.shape[
+    # #                                                                                                                0])
+    #
+    # # example_cols = ['Gender', 'ECy1', 'SO4y1', 'NH4y1', 'Nity1', 'OCy1', 'label', ]
+    # # msg += tabulate(exposure_df[example_cols].head(10), headers='keys', tablefmt='psql') + '\n'
+    #
+    # # msg += "... data after dropping NAs and/or imputation:\n"
+    # # example_cols = ['Gender', 'ECy1', 'SO4y1', 'NH4y1', 'Nity1', 'OCy1', 'label', ]
+    # # msg += tabulate(exposure_df[example_cols].head(10), headers='keys', tablefmt='psql') + '\n'
+    #
+    # # print(msg)
+
+    if save:
+        output_path = os.path.join(dataDir, output_matrix)
+        asthma_df.to_csv(output_path, sep=sep, index=False, header=True)
+        print('(load_merge) Saved output dataframe to: {}'.format(output_path))
+
+    return asthma_df
+
+
 def test(**kargs):
     time_windows_list = [-1, 0, range(-1, 1),
                          range(2), range(3), range(4), range(5),
@@ -569,17 +857,32 @@ def test(**kargs):
     # output_name = 'regular_asthma_symptoms_past6months'
     # output_name = 'age_greaterthan5_diagnosed_asthma'
     # output_name = 'age_diagnosed_asthma'
+    # output_name = 'emergency_dept'
     # output_name = 'emergency_dept_pastyr_count'
+    # output_name = 'hospitalize_overnight'
     # output_name = 'hospitalize_overnight_pastyr_count'
-    output_name = 'regular_asthma_symptoms_daysCount_pastWeek'
-    for time_window in time_windows_list:
-        load_merge(vars_matrix='exposures-4yrs.csv',
-                   label_matrix='nasal_biomarker_asthma1019.csv',
-                   output_matrix='{}_7pollutants_no_impute{}.csv'.format(output_name, '{}'),
-                   # output_matrix='age_greaterthan5_diagnosed_asthma_7pollutants_no_impute{}.csv',
-                   tImputation = False, time_window=time_window,
-                   outcome_limited_with_asthma=True,
-                   binary_outcome=False)
+    # output_name = 'regular_asthma_symptoms_daysCount_pastWeek'
+    # output_name = 'regular_asthma_symptoms_past6months'
+    # output_name = 'daily_controller_past6months'
+    # output_name = 'regular_medication'
+    # for time_window in time_windows_list:
+    #     load_merge(vars_matrix='exposures-4yrs.csv',
+    #                label_matrix='nasal_biomarker_asthma1019.csv',
+    #                output_matrix='{}_7pollutants_no_impute{}.csv'.format(output_name, '{}'),
+    #                # output_matrix='age_greaterthan5_diagnosed_asthma_7pollutants_no_impute{}.csv',
+    #                tImputation = False, time_window=time_window,
+    #                outcome_limited_with_asthma=True,
+    #                binary_outcome=False)
+    output_name = 'asthma'
+    # output_name = 'asthma(act_score)'
+    load_merge_income_only(
+            # vars_matrix='exposures-4yrs.csv',
+               label_matrix='nasal_biomarker_asthma1019.csv',
+               output_matrix='{}_income.csv'.format(output_name, '{}'),
+               # output_matrix='age_greaterthan5_diagnosed_asthma_7pollutants_no_impute{}.csv',
+               tImputation=False, time_window=0,
+               outcome_limited_with_asthma=False,
+               binary_outcome=True)
 
 
     return
