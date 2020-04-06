@@ -498,7 +498,7 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\n"):
     return topk_profile_with_value_str
     # print("> Top {} paths (overall):\n{}\n".format(topk, sorted_paths[:topk]))
 
-def profile_indicator_function(path, feature_idx, path_threshold, X, sep='\n', y=None):
+def profile_indicator_function(path, feature_idx, path_threshold, X, sep='\t', y=None):
     profile_indicator = np.ones((X.shape[0]))
     for n_idx, node_with_sign in enumerate(path.split(sep)):
         larger_than = True
@@ -837,7 +837,7 @@ def runWorkflow(**kargs):
                              cols[3]: relation_dir.split('/')[-1],
                              cols[4]: profile_coef}, ignore_index=True)
             print(p_val_df)
-            for single_pollutant_profile in topk_profile_str[idx].split('\n'):
+            for single_pollutant_profile in topk_profile_str[idx].split('\t'):
                 if '<=' in single_pollutant_profile:
                     pollutant_name, thres = single_pollutant_profile.split('<=')
                 elif '>' in single_pollutant_profile:
