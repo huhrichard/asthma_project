@@ -306,7 +306,7 @@ def count_paths_with_thres_sign(estimator,
             stack.append((children_left[node_id], parent_depth + 1))
             stack.append((children_right[node_id], parent_depth + 1))
             if node_id != 0:
-                space = ' '
+                space = '\t'
                 threshold_list = paths_threshold_in_this_tree[paths_in_this_tree[node_id]] + [threshold[node_id]]
             else:
                 space = ''
