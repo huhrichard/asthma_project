@@ -54,7 +54,8 @@ Reference
 """
 dataDir = os.path.join(os.getcwd(), 'data')  # default unless specified otherwise
 # plotDir = os.path.join(os.getcwd(), 'plot')
-plotDir = os.path.join(os.getcwd(), 'plot/nata_birth_year')
+# plotDir = os.path.join(os.getcwd(), 'plot/nata_birth_year')
+plotDir = os.path.join(os.getcwd(), 'plot/nata_diagnose_year')
 # output_fn = sys.argv[-1]
 # output_folder_name = 'act_score'
 # output_folder_name = 'emergency_dept'
@@ -476,7 +477,7 @@ def get_median_of_paths_threshold(paths_thres):
         paths_median_threshold[path] = np.median(np.array(threshold_list), axis=0)
     return paths_median_threshold
 
-def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\t"):
+def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\n"):
     topk_profile_with_value_str = []
 
     for k, (path, count) in enumerate(sorted_paths[:topk]):
@@ -484,13 +485,13 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\t"):
         profile_str = ""
         if count > 10:
             for idx, pollutant in enumerate(path.split(sep)):
-                profile_str += " {}{:.3e}{}".format(pollutant, paths_thres[path][idx], sep)
+                profile_str += "{}{}{:.3e}{}".format(sep,pollutant, paths_thres[path][idx], sep)
                 # plot_histogram(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
                 # plot_scatter(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
                 # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
 
-            print_str = "{}th paths ({}):{}".format(k, count, profile_str[:-2])
-            topk_profile_with_value_str.append(profile_str[1:-1])
+            print_str = "{}th paths ({}):{}".format(k, count, profile_str[:-1])
+            topk_profile_with_value_str.append(profile_str[2:-2])
             print(print_str)
         else:
             break
@@ -836,7 +837,7 @@ def runWorkflow(**kargs):
                              cols[3]: relation_dir.split('/')[-1],
                              cols[4]: profile_coef}, ignore_index=True)
             print(p_val_df)
-            for single_pollutant_profile in topk_profile_str[idx].split('\t'):
+            for single_pollutant_profile in topk_profile_str[idx].split('\n'):
                 if '<=' in single_pollutant_profile:
                     pollutant_name, thres = single_pollutant_profile.split('<=')
                 elif '>' in single_pollutant_profile:
