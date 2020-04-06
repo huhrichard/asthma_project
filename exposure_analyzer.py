@@ -498,7 +498,7 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\n"):
     return topk_profile_with_value_str
     # print("> Top {} paths (overall):\n{}\n".format(topk, sorted_paths[:topk]))
 
-def profile_indicator_function(path, feature_idx, path_threshold, X, sep=' ', y=None):
+def profile_indicator_function(path, feature_idx, path_threshold, X, sep='\n', y=None):
     profile_indicator = np.ones((X.shape[0]))
     for n_idx, node_with_sign in enumerate(path.split(sep)):
         larger_than = True
