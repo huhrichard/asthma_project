@@ -491,7 +491,7 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\n"):
                 # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
 
             print_str = "{}th paths ({}):{}".format(k, count, profile_str[:-1])
-            topk_profile_with_value_str.append(profile_str[2:-2])
+            topk_profile_with_value_str.append(profile_str[1:-1])
             print(print_str)
         else:
             break
@@ -927,7 +927,7 @@ if __name__ == "__main__":
 
     for outcome, binary_out in outcome_binary_dict.items():
         # file_format = '{}_7pollutants_no_impute_*.csv'.format(outcome)
-        file_format = '{}_NATA_birth_yr.csv'.format(outcome)
+        file_format = '{}_NATA_diagnose_yr.csv'.format(outcome)
         file_list = find(file_format, path)
         for file in file_list:
             print(file)
