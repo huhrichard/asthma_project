@@ -477,7 +477,7 @@ def get_median_of_paths_threshold(paths_thres):
         paths_median_threshold[path] = np.median(np.array(threshold_list), axis=0)
     return paths_median_threshold
 
-def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\n"):
+def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\t"):
     topk_profile_with_value_str = []
 
     for k, (path, count) in enumerate(sorted_paths[:topk]):
@@ -485,6 +485,7 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\n"):
         profile_str = ""
         if count > 10:
             for idx, pollutant in enumerate(path.split(sep)):
+                # print()
                 profile_str += "{}{}{:.3e}{}".format(sep,pollutant, paths_thres[path][idx], sep)
                 # plot_histogram(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
                 # plot_scatter(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
