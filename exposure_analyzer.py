@@ -54,8 +54,8 @@ Reference
 """
 dataDir = os.path.join(os.getcwd(), 'data')  # default unless specified otherwise
 # plotDir = os.path.join(os.getcwd(), 'plot')
-# plotDir = os.path.join(os.getcwd(), 'plot/nata_birth_year')
-plotDir = os.path.join(os.getcwd(), 'plot/nata_diagnose_year')
+plotDir = os.path.join(os.getcwd(), 'plot/nata_birth_year')
+# plotDir = os.path.join(os.getcwd(), 'plot/nata_diagnose_year')
 # output_fn = sys.argv[-1]
 # output_folder_name = 'act_score'
 # output_folder_name = 'emergency_dept'
@@ -928,7 +928,8 @@ if __name__ == "__main__":
 
     for outcome, binary_out in outcome_binary_dict.items():
         # file_format = '{}_7pollutants_no_impute_*.csv'.format(outcome)
-        file_format = '{}_NATA_diagnose_yr.csv'.format(outcome)
+        # file_format = '{}_NATA_diagnose_yr.csv'.format(outcome)
+        file_format = '{}_NATA_birth_yr.csv'.format(outcome)
         file_list = find(file_format, path)
         for file in file_list:
             print(file)
