@@ -65,26 +65,29 @@ def load_data(input_path=None, input_file=None,
         
     assert os.path.isfile(input_path), "Invalid input path: {}".format(input_path)
 
-    df = pd.read_csv(input_path, header=0, sep=sep) 
+    df = pd.read_csv(input_path, header=0, sep=sep)
+    df = df.loc[df['ID']!=45,:].reset_index()
+    df.drop(columns=['index'], inplace=True)
+    # print(df.columns)
     df.dropna(axis=0, how='any', inplace=True)
+    confounders_df = df[confounding_vars]
     exclude_vars = list(filter(lambda x: x in df.columns, exclude_vars))
     exclude_vars.append(col_target)
     dfx = df.drop(exclude_vars, axis=1)
     features = dfx.columns.values
-    print('features:', features)
-    # TODO: return confounders as well
-    confounders_df = pd.read_csv(input_path, header=0, sep=sep)
-    confounders_df = confounders_df[confounding_vars]
+
+
 
     # X = np.log10(dfx.values)
     X = dfx.values
     y = df[col_target]
+    print(y.shape)
     # print(df[['ID', 'label']])
 
     if verbose: 
         counts = collections.Counter(y)
         print("... class distribution | classes: {} | sizes: {}".format(list(counts.keys()), counts))
-        print("... dim(X): {} variables: {}".format(X.shape, features))
+        print("... dim(X): {} variables:".format(X.shape, len(features)))
     
     return (X, y, features, confounders_df, df)
 
@@ -873,9 +876,9 @@ def test(**kargs):
     #                tImputation = False, time_window=time_window,
     #                outcome_limited_with_asthma=True,
     #                binary_outcome=False)
-    output_name = 'asthma'
-    # output_name = 'asthma(act_score)'
-    load_merge_income_only(
+    # output_name = 'asthma'
+    # # output_name = 'asthma(act_score)'
+    load_merge(
             # vars_matrix='exposures-4yrs.csv',
                label_matrix='nasal_biomarker_asthma1019.csv',
                output_matrix='{}_income.csv'.format(output_name, '{}'),

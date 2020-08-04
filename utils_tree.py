@@ -1,7 +1,8 @@
 # load all libraries 
 import os, sys
 import collections
-
+from os.path import exists, abspath, isdir
+from os import mkdir
 from matplotlib import pyplot as plt
 
 from sklearn.model_selection import train_test_split # Import train_test_split function
@@ -31,8 +32,11 @@ Reference
 """
 plotDir = os.path.join(os.getcwd(), 'plot')
 
+def check_dir(target_dir):
+    if not exists(target_dir):
+        mkdir(target_dir)
 
-def visualize(clf, feature_names, labels=['0', '1'], file_name='test', plot_dir='', ext='tif', save=True):
+def visualize(clf, feature_names, labels=['0', '1'], file_name='test', plot_dir='', ext='png', save=True, outcome_name=''):
     from sklearn.tree import export_graphviz
     from sklearn.externals.six import StringIO  
     # from IPython.display import Image  
@@ -43,14 +47,17 @@ def visualize(clf, feature_names, labels=['0', '1'], file_name='test', plot_dir=
     # ensure that labels are in string format 
     labels = [str(l) for l in sorted(labels)]
     
-    output_path = os.path.join(plot_dir, "{}.{}".format(file_name, ext))
+    # output_path = os.path.join(plot_dir, "{}.{}".format(file_name, ext))
+    # output_path = osoutcome_name)
+    check_dir(outcome_name)
+    output_path = os.path.join(outcome_name, "{}.{}".format(file_name, ext))
 
     # labels = ['0','1']
     # label_names = {'0': '-', '1': '+'}
     dot_data = StringIO()
     export_graphviz(clf, out_file=dot_data,  
                     filled=True, rounded=True, # node_ids=True, 
-                    special_characters=True, feature_names=feature_names, class_names=labels)
+                    special_characters=True, feature_names=feature_names)
     # ... class_names must be of string type
 
     graph = pydotplus.graph_from_dot_data(dot_data.getvalue())  
