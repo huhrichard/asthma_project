@@ -1161,7 +1161,7 @@ if __name__ == "__main__":
                 # file_format = '{}_NATA_diagnose_yr.csv'.format(outcome)
                 if not(yr_name == 'diagnose_yr' and outcome == 'asthma'):
 
-                    plotDir = os.path.join(os.getcwd(), 'plot_dummy2/nata_{}_{}'.format(yr_name, yr_f))
+                    plotDir = os.path.join(os.getcwd(), 'plot/nata_{}_{}'.format(yr_name, yr_f))
                     if not os.path.exists(plotDir):
                         os.mkdir(plotDir)
                     pvalue_df = pd.DataFrame(columns=['profile', 'outcome', 'p_val', 'relation',

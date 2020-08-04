@@ -1,11 +1,11 @@
 #!/bin/bash
 #BSUB -J asthma
 #BSUB -P acc_pandeg01a
-#BSUB -q express
-#BSUB -n 31
-#BSUB -W 4:00
+#BSUB -q premium
+#BSUB -n 5
+#BSUB -W 10:00
 #BSUB -o asthma.stdout
 #BSUB -eo asthma.stderr
-#BSUB -R rusage[mem=32000]
+#BSUB -R rusage[mem=8000]
 
 python exposure_analyzer.py
