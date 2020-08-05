@@ -20,7 +20,7 @@ from statsmodels.stats.multitest import fdrcorrection
 from sklearn.metrics import fbeta_score, make_scorer, precision_recall_curve, precision_recall_fscore_support
 from scipy import stats
 import matplotlib.ticker as mtick
-from imblearn.over_sampling import RandomOverSampler
+# from imblearn.over_sampling import RandomOverSampler
 
 from decimal import Decimal
 from tabulate import tabulate
@@ -342,9 +342,9 @@ def classify(X, y, params={}, random_state=0, binary_outcome=True, **kargs):
 
 
     if binary_outcome:
-        if balance_training:
-            ros = RandomOverSampler(random_state=random_state)
-            X, y = ros.fit_resample(X, y)
+        # if balance_training:
+            # ros = RandomOverSampler(random_state=random_state)
+            # X, y = ros.fit_resample(X, y)
         model = DecisionTreeClassifier(criterion=info_gain_measure, random_state=random_state)
         scoring = f_max_score_func
         cv_split = StratifiedKFold(n_splits=10, shuffle=True, random_state=tree_seed)
@@ -1135,7 +1135,7 @@ if __name__ == "__main__":
                            # 'regular_asthma_symptoms_daysCount_pastWeek': False
                            }
 
-
+    suffix = 'd'
     # file_format = 'emergency_dept_7pollutants_no_impute_*.csv'
     # file_format = 'hospitalize_overnight_7pollutants_no_impute_*.csv'
     # file_format = 'regular_medication_7pollutants_no_impute_*.csv'
@@ -1161,7 +1161,7 @@ if __name__ == "__main__":
                 # file_format = '{}_NATA_diagnose_yr.csv'.format(outcome)
                 if not(yr_name == 'diagnose_yr' and outcome == 'asthma'):
 
-                    plotDir = os.path.join(os.getcwd(), 'plot/nata_{}_{}'.format(yr_name, yr_f))
+                    plotDir = os.path.join(os.getcwd(), 'plot_dummy2/nata_{}_{}'.format(yr_name, yr_f))
                     if not os.path.exists(plotDir):
                         os.mkdir(plotDir)
                     pvalue_df = pd.DataFrame(columns=['profile', 'outcome', 'p_val', 'relation',
@@ -1223,7 +1223,7 @@ if __name__ == "__main__":
 
     pvalue_df_cat_all = pd.concat(pvalue_df_list)
 
-    pvalue_df_cat_all.to_csv('fdr.csv', index=False, header=True)
+    pvalue_df_cat_all.to_csv('fdr_{}.csv'.format(suffix), index=False, header=True)
 
     pred_score_df_cat_all = pd.concat(pred_score_df_list)
-    pred_score_df_cat_all.to_csv('pred_score.csv', index=False, header=True)
+    pred_score_df_cat_all.to_csv('pred_score_{}.csv'.format(suffix), index=False, header=True)
