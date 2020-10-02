@@ -10,12 +10,19 @@ from sklearn.model_selection import train_test_split # Import train_test_split f
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor    # Import decision tree classifier model
 from sklearn import metrics #Import scikit-learn metrics module for accuracy calculation
-
+import xgboost
+import matplotlib
 import numpy as np
 import pandas as pd
 
 from tabulate import tabulate
 # from utils_plot import saveFig
+
+inequality_operators = {'<': lambda x, y: x < y,
+                        '<=': lambda x, y: x <= y,
+                        '>': lambda x, y: x > y,
+                        '>=': lambda x, y: x >= y}
+
 """
 
 
@@ -68,6 +75,304 @@ def visualize(clf, feature_names, labels=['0', '1'], file_name='test', plot_dir=
     # Image(graph.create_png())
 
     return graph
+
+def extract_booster_label_to_dict(booster_in_text, x_train, y_train, feature_idx_inv_dict):
+    booster_node_list = booster_in_text.replace('\t', '').split('\n')
+    label_replace_dict = {}
+    b_node_dict = {}
+    for bnode in booster_node_list:
+        bn_split = bnode.split(':')
+        if len(bn_split) == 2:
+            b_node_dict[int(bn_split[0])] = bn_split[1]
+
+    n_nodes = len(b_node_dict)
+    stack = [0]
+    b_node_detail = {0:{'x':x_train, 'y':y_train,
+                        '#_of_patients':x_train.shape[0],
+                        '#_of_positive_patients': sum(y_train),
+                        '#_of_negative_patients': x_train.shape[0]-sum(y_train),
+                        # '%_of_positive_patients': '{:.1f}%'.format(sum(y_train)/x_train.shape[0]*100),
+                        # '%_of_negative_patients': '{:.1f}%'.format(100-sum(y_train) / x_train.shape[0] * 100),
+                        }}
+    # is_leaves = np.zeros(shape=n_nodes, dtype=bool)
+    # with_contradict_sign = np.zeros(shape=n_nodes, dtype=bool)
+    # paths_in_this_tree = ['' for i in range(n_nodes)]
+    # paths_threshold_in_this_tree = {}
+    not_print_list = ['x', 'y']
+
+    while len(stack) > 0:
+        node_id = stack.pop()
+        split_detail = b_node_dict[node_id]
+        split_dict = extract_split_ft_threshold_next_node(split_detail)
+        new_node_rule = ''
+        if split_dict is None:
+
+            key_replace = split_detail
+            # print(key_replace)
+        else:
+            yes_feat_with_sign, yes_node = split_dict['yes']
+            no_feat_with_sign, no_node = split_dict['no']
+            thres = split_dict['thres']
+            feat = int(split_dict['feature'].replace('f', ''))
+            # print(feat, split_dict['feature'])
+            # feat = int(feature_idx_inv_dict[split_dict['feature']])
+            # b_node_detail[node_id]['node_rule'] = split_dict['node_rule']
+            key_replace = split_dict['node_rule']
+            new_node_rule = split_dict['node_rule'].replace(split_dict['feature'], feature_idx_inv_dict[feat])
+            x_train_in_node = b_node_detail[node_id]['x']
+            y_train_in_node = b_node_detail[node_id]['y']
+
+
+            yes_bool = x_train_in_node[:, feat] < thres
+            no_bool = np.logical_not(yes_bool)
+            yes_x, yes_y = x_train_in_node[yes_bool], y_train_in_node[yes_bool]
+            no_x, no_y = x_train_in_node[no_bool], y_train_in_node[no_bool]
+
+
+            b_node_detail[yes_node] = {'x':yes_x, 'y':yes_y,
+                        '#_of_patients':yes_x.shape[0],
+                                       '#_of_positive_patients': sum(yes_y),
+                                       '#_of_negative_patients': yes_x.shape[0] - sum(yes_y),
+                        # '%_of_positive_patients': '{:.1f}%'.format(sum(yes_y)/yes_x.shape[0]*100),
+                        # '%_of_negative_patients': '{:.1f}%'.format(100-sum(yes_y) / yes_x.shape[0] * 100)
+                                       }
+
+            b_node_detail[no_node] = {'x': no_x, 'y': no_y,
+                                       '#_of_patients': no_x.shape[0],
+                                      '#_of_positive_patients': sum(no_y),
+                                      '#_of_negative_patients': no_x.shape[0] - sum(no_y),
+                                       # '%_of_positive_patients': '{:.1f}%'.format(sum(no_y) / no_x.shape[0] * 100),
+                                       # '%_of_negative_patients': '{:.1f}%'.format(100 - sum(no_y) / no_x.shape[0] * 100)
+                                      }
+            stack.append(yes_node)
+            stack.append(no_node)
+        if new_node_rule == '':
+            replace_string = key_replace
+        else:
+            replace_string = new_node_rule
+        for k, v in b_node_detail[node_id].items():
+            if not k in not_print_list:
+                replace_string += '\n{}:{}'.format(k, v)
+        label_replace_dict[key_replace] = replace_string
+
+    return label_replace_dict
+
+
+def to_graphviz_custom(booster, training_data, outcome_name, fmap='', num_trees=0, rankdir=None,
+                yes_color=None, no_color=None,
+                condition_node_params=None, leaf_node_params=None,
+                       **kwargs):
+    """Convert specified tree to graphviz instance. IPython can automatically plot
+    the returned graphiz instance. Otherwise, you should call .render() method
+    of the returned graphiz instance.
+
+    Parameters
+    ----------
+    booster : Booster, XGBModel
+        Booster or XGBModel instance
+    fmap: str (optional)
+       The name of feature map file
+    num_trees : int, default 0
+        Specify the ordinal number of target tree
+    rankdir : str, default "UT"
+        Passed to graphiz via graph_attr
+    yes_color : str, default '#0000FF'
+        Edge color when meets the node condition.
+    no_color : str, default '#FF0000'
+        Edge color when doesn't meet the node condition.
+    condition_node_params : dict, optional
+        Condition node configuration for for graphviz.  Example:
+
+        .. code-block:: python
+
+            {'shape': 'box',
+             'style': 'filled,rounded',
+             'fillcolor': '#78bceb'}
+
+    leaf_node_params : dict, optional
+        Leaf node configuration for graphviz. Example:
+
+        .. code-block:: python
+
+            {'shape': 'box',
+             'style': 'filled',
+             'fillcolor': '#e48038'}
+
+    \\*\\*kwargs: dict, optional
+        Other keywords passed to graphviz graph_attr, e.g. ``graph [ {key} = {value} ]``
+
+    Returns
+    -------
+    graph: graphviz.Source
+
+    """
+    try:
+        from graphviz import Source
+        import json
+    except ImportError:
+        raise ImportError('You must install graphviz to plot tree')
+    # if isinstance(booster, XGBModel):
+    booster = booster.get_booster()
+
+    # squash everything back into kwargs again for compatibility
+    parameters_dot = 'dot'
+    parameters_text = 'text'
+    extra = {}
+    for key, value in kwargs.items():
+        extra[key] = value
+
+    if rankdir is not None:
+        kwargs['graph_attrs'] = {}
+        kwargs['graph_attrs']['rankdir'] = rankdir
+    for key, value in extra.items():
+        if 'graph_attrs' in kwargs.keys():
+            kwargs['graph_attrs'][key] = value
+        else:
+            kwargs['graph_attrs'] = {}
+        del kwargs[key]
+
+    if yes_color is not None or no_color is not None:
+        kwargs['edge'] = {}
+    if yes_color is not None:
+        kwargs['edge']['yes_color'] = yes_color
+    if no_color is not None:
+        kwargs['edge']['no_color'] = no_color
+
+    if condition_node_params is not None:
+        kwargs['condition_node_params'] = condition_node_params
+    if leaf_node_params is not None:
+        kwargs['leaf_node_params'] = leaf_node_params
+
+    if kwargs:
+        parameters_dot += ':'
+        parameters_dot += str(kwargs)
+        parameters_text += ':'
+        parameters_text += str(kwargs)
+    tree_dot = booster.get_dump(
+        # fmap=fmap,
+        dump_format=parameters_dot)[num_trees]
+    tree_text = booster.get_dump(
+        # fmap=fmap,
+        dump_format=parameters_text)[num_trees]
+    # print(json.dump(tree_dot.__dict__))
+    # print(tree_text_with_stats)
+    fmap_df = pd.read_csv(fmap, sep='\t', header=None)
+    # print(fmap_df.columns)
+    fmap_dict = {}
+    for index, row in fmap_df.iterrows():
+        fmap_dict[int(row[0])] = row[1]
+
+
+    label_replace_dict = extract_booster_label_to_dict(tree_text,
+                                                       x_train=training_data[0],
+                                                       y_train=training_data[1],
+                                                       feature_idx_inv_dict = fmap_dict)
+    for k, v in label_replace_dict.items():
+        tree_dot = tree_dot.replace(k, v)
+    tree_dot = tree_dot.replace(', missing', '')
+    tree_dot = tree_dot.replace('graph [ rankdir=TB ]',
+                                'graph [rankdir=TB, label="{}", labelloc=t, fontsize=30]'.format(outcome_name.split('/')[-1]))
+    # tree_dot.replace("digraph {\n")
+    # print(tree_dot)
+    g = Source(tree_dot)
+
+    # print(json.dumps(g.__dict__, indent=2))
+    return g
+
+def plot_tree_tiff_wrapper(booster,training_data,output_path,outcome_name, fmap='', num_trees=0, rankdir=None, ax=None, **kwargs):
+    """
+    Modified plot tree function
+    Plot specified tree.
+
+    Parameters
+    ----------
+    booster : Booster, XGBModel
+        Booster or XGBModel instance
+    fmap: str (optional)
+       The name of feature map file
+    num_trees : int, default 0
+        Specify the ordinal number of target tree
+    rankdir : str, default "TB"
+        Passed to graphiz via graph_attr
+    ax : matplotlib Axes, default None
+        Target axes instance. If None, new figure and axes will be created.
+    kwargs :
+        Other keywords passed to to_graphviz
+
+    Returns
+    -------
+    ax : matplotlib Axes
+
+    """
+    try:
+        from matplotlib import pyplot as plt
+        from matplotlib import image
+    except ImportError:
+        raise ImportError('You must install matplotlib to plot tree')
+    from io import BytesIO
+
+    if ax is None:
+        _, ax = plt.subplots(1, 1)
+
+    g = to_graphviz_custom(booster, training_data, outcome_name=outcome_name,fmap=fmap, num_trees=num_trees, rankdir=rankdir,
+                    **kwargs)
+    g.render(filename=output_path)
+    # print(type(g))
+    # print(g)
+    # g.write_png(output_path)
+    # # print(g.source)
+    #
+    # s = BytesIO()
+    # s.write(g.pipe(format='svg'))
+    # # s.seek(0)
+    # img = image.imread(s)
+    # #
+    # ax.imshow(img)
+    # ax.axis('off')
+    # return ax
+
+def visualize_xgb(clf, feature_names, training_data, outcome_name, labels=['0', '1'], file_name='test',
+                  plot_dir='', ext='png', save=True, num_trees=0,
+                  tree_dir=''):
+    # from sklearn.tree import export_graphviz
+    # from sklearn.externals.six import StringIO
+    # # from IPython.display import Image
+    # import pydotplus
+
+
+    """
+    Add parameters to the plotting function to control the node shape 
+    https://github.com/dmlc/xgboost/issues/3858
+    """
+    cNodeParams = {'shape': 'box',
+                   'style': 'filled,rounded',
+                   'fillcolor': '#78bceb'}
+    lNodeParams = {'shape': 'box',
+                   'style': 'filled',
+                   'fillcolor': '#e48038'}
+
+    fig1, ax1 = plt.subplots(1,1, figsize=(15, 8))
+    output_path = os.path.join(tree_dir, file_name)
+    plot_tree_tiff_wrapper(booster=clf, fmap=feature_names, output_path=output_path, num_trees=num_trees, ax=ax1,
+                           training_data=training_data, outcome_name=outcome_name,
+                      **{
+                          'size': str(5),
+                         'condition_node_params': cNodeParams,
+                         'leaf_node_params': lNodeParams
+                         }
+                      # conditionNodeParams=cNodeParams, leafNodeParams=lNodeParams
+                      )
+    # g = xgboost.to_graphviz(clf, conditionNodeParams=cNodeParams,
+                            # leafNodeParams=lNodeParams,
+                            # **{'size': str(15)})
+
+
+    # fig = matplotlib.pyplot.gcf()
+    # fig.set_size_inches(, 100)
+    # fig.savefig('tree.png')
+    # g.write_png(output_path)
+    # fig1.savefig(output_path, dpi=400, pil_kwargs={"compression": "tiff_lzw"})
+
 
 def sort_path(paths, labels=[], merge_labels=False, verbose=True, verify=True):
     import operator
@@ -281,6 +586,134 @@ def count_features(paths, labels=[], verify=True, sep=' '):
             counts[node] += cnt
     return counts
 
+def parse_split(list_str, split_delimiter='\t', yes='yes', no='no'):
+    root = list_str[0]
+    root_rule = root.split('[')[1]
+    # reach the leaf
+    if len(root_rule) == 0:
+        return None
+    root_rule = root_rule.split(']')[0]
+    yes_node = root.split('yes=')[1].split(',')[0]
+    no_node = root.split('no=')[1].split(',')[0]
+
+    yes_node_idx = 0
+    no_node_idx = 0
+    for str_idx, s in enumerate(list_str):
+        a = 0
+
+def extract_split_ft_threshold_next_node(val, xgb_ft_real_dict=None, yes='yes', no='no'):
+    if 'leaf' in val:
+        return None
+    else:
+        node_rule = val.split('[')[1].split(']')[0]
+        xgb_ft = node_rule.split('<')[0]
+        if xgb_ft_real_dict is None:
+            node_rule_replaced = node_rule
+        else:
+            node_rule_replaced = node_rule.replace(xgb_ft, xgb_ft_real_dict[xgb_ft])
+        node_splited_by_smaller_sign = node_rule_replaced.split('<')
+        node_feat = node_splited_by_smaller_sign[0]
+        yes_node = val.split('yes=')[1].split(',')[0]
+        no_node = val.split('no=')[1].split(',')[0]
+        return {'yes': (node_feat+'<', int(yes_node)),
+                'no': (node_feat+'>=', int(no_node)),
+                'thres': float(node_splited_by_smaller_sign[-1]),
+                'feature': node_feat,
+                'node_rule':node_rule}
+
+
+
+def count_paths_with_thres_sign_from_xgb(estimator,
+                                paths={}, feature_names=[], paths_threshold = {},
+                                paths_from = {},
+                                labels = {},
+                                merge_labels=True, to_str=False,
+                                sep=' ', verbose=True, index=0, multiple_counts=True):
+    feature_threshold_count = {}
+    boosters = estimator.get_booster().get_dump()
+    counted_path = set()
+    for b_idx, b0 in enumerate(boosters):
+        b0_split_n = b0.replace('\t', '').split('\n')
+        xgb_ft_to_real_ft = {k: v for k, v in zip(estimator.get_booster().feature_names, feature_names)}
+
+        b0_node_dict = {}
+        for bnode in b0_split_n:
+            bn_split = bnode.split(':')
+            if len(bn_split) == 2:
+
+                b0_node_dict[int(bn_split[0])] = bn_split[1]
+
+        n_nodes = len(b0_node_dict)
+        stack = [0]
+        is_leaves = np.zeros(shape=n_nodes, dtype=bool)
+        with_contradict_sign = np.zeros(shape=n_nodes, dtype=bool)
+        paths_in_this_tree = ['' for i in range(n_nodes)]
+        paths_threshold_in_this_tree = {}
+
+
+        while len(stack) > 0:
+            node_id = stack.pop()
+            split_detail = b0_node_dict[node_id]
+            split_dict = extract_split_ft_threshold_next_node(split_detail, xgb_ft_to_real_ft)
+            if split_dict is None:
+                is_leaves[node_id] = True
+            else:
+
+                if node_id != 0:
+                    space = '\t'
+                    threshold_list = paths_threshold_in_this_tree[paths_in_this_tree[node_id]] + [split_dict['thres']]
+                else:
+                    space = ''
+                    threshold_list = [split_dict['thres']]
+
+                base_str = paths_in_this_tree[node_id] + space
+                yes_feat_with_sign, yes_node = split_dict['yes']
+                no_feat_with_sign, no_node = split_dict['no']
+
+                stack.append(yes_node)
+                stack.append(no_node)
+
+                yes_string = base_str + yes_feat_with_sign
+                no_string = base_str + no_feat_with_sign
+
+                if split_dict['feature'] in paths_in_this_tree[node_id]:
+                    with_contradict_sign[yes_node] = True
+                    with_contradict_sign[no_node] = True
+                else:
+                    with_contradict_sign[yes_node] = with_contradict_sign[node_id]
+                    with_contradict_sign[no_node] = with_contradict_sign[node_id]
+
+                paths_threshold_in_this_tree[yes_string] = threshold_list
+                paths_threshold_in_this_tree[no_string] = threshold_list
+                paths_in_this_tree[yes_node] = yes_string
+                paths_in_this_tree[no_node] = no_string
+
+
+        paths_in_this_tree = np.array(paths_in_this_tree)[is_leaves * np.logical_not(with_contradict_sign)]
+        # print(paths_in_this_tree)
+        for path in paths_in_this_tree:
+            # print(path)
+            if path != '':
+                if not path in paths:
+                    paths[path] = 1
+                    paths_threshold[path] = [paths_threshold_in_this_tree[path]]
+                    counted_path.add(path)
+                    paths_from[path] = [(index, b_idx)]
+                else:
+                    if multiple_counts:
+                        paths[path] += 1
+                    else:
+                        if not path in counted_path:
+                            counted_path.add(path)
+                            paths[path] += 1
+                    paths_from[path].append((index, b_idx))
+                    paths_threshold[path].append(paths_threshold_in_this_tree[path])
+    # print("The binary tree structure has %s nodes and has "
+    #       "the following tree structure:"
+    #       % n_nodes)
+    return paths, paths_threshold, paths_from
+
+
 def count_paths_with_thres_sign(estimator,
                                 paths={}, feature_names=[], paths_threshold = {},
                                 labels = {},
@@ -301,6 +734,8 @@ def count_paths_with_thres_sign(estimator,
     with_contradict_sign = np.zeros(shape=n_nodes, dtype=bool)
     paths_in_this_tree = ['' for i in range(n_nodes)]
     paths_threshold_in_this_tree = {}
+
+
 
     stack = [(0, -1)]  # seed is the root node id and its parent depth
     # paths_in_this_tree = []

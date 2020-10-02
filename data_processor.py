@@ -79,6 +79,7 @@ def load_data(input_path=None, input_file=None,
 
 
     # X = np.log10(dfx.values)
+    # X = dfx.values
     X = dfx.values
     y = df[col_target]
     print(y.shape)
