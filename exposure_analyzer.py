@@ -21,7 +21,7 @@ from sklearn.metrics import fbeta_score, make_scorer, precision_recall_curve, pr
 from scipy import stats
 import matplotlib.ticker as mtick
 import xgboost
-from imblearn.over_sampling import RandomOverSampler
+# from imblearn.over_sampling import RandomOverSampler
 import warnings
 import operator
 warnings.filterwarnings("ignore")
@@ -365,9 +365,9 @@ def classify(X, y, params={}, random_state=0, binary_outcome=True, **kargs):
 
 
     if binary_outcome:
-        if balance_training:
-            ros = RandomOverSampler(random_state=random_state)
-            X, y = ros.fit_resample(X, y)
+        # if balance_training:
+        #     ros = RandomOverSampler(random_state=random_state)
+        #     X, y = ros.fit_resample(X, y)
         if xgb is False:
             model = DecisionTreeClassifier(criterion=info_gain_measure, random_state=random_state)
         else:
