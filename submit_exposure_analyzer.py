@@ -3,7 +3,7 @@ import os
 
 suffix = sys.argv[-1]
 
-lsf_str = "#!/bin/bash\n#BSUB -J asthma_project\n#BSUB -P acc_pandeg01a\n#BSUB -q long\n" \
+lsf_str = "#!/bin/bash\n#BSUB -J asthma_project\n#BSUB -P acc_pandeg01a\n#BSUB -q premium\n" \
           "#BSUB -n 4\n#BSUB -W 48:00\n#BSUB -o analyzer_%J.stdout\n#BSUB -eo analyzer_%J.stderr\n" \
           "#BSUB -R rusage[mem=10000]\nmodule purge\n"
 python_cmd = "python exposure_analyzer.py {}".format(suffix)
