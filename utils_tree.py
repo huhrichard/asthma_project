@@ -316,7 +316,7 @@ def plot_tree_tiff_wrapper(booster,training_data,output_path,outcome_name, fmap=
 
     g = to_graphviz_custom(booster, training_data, outcome_name=outcome_name,fmap=fmap, num_trees=num_trees, rankdir=rankdir,
                     **kwargs)
-    g.render(filename=output_path)
+    g.render(filename=output_path, cleanup=True)
     # print(type(g))
     # print(g)
     # g.write_png(output_path)

@@ -25,6 +25,9 @@ import xgboost
 import warnings
 import operator
 warnings.filterwarnings("ignore")
+import warnings
+from statsmodels.tools.sm_exceptions import ConvergenceWarning
+warnings.simplefilter('ignore', ConvergenceWarning)
 
 from decimal import Decimal
 from tabulate import tabulate
