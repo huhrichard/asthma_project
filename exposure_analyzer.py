@@ -955,39 +955,39 @@ def runWorkflow(**kargs):
                                 # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
                                 }, ignore_index=True)
                 # print(p_val_df)
-                for single_pollutant_profile in topk_profile_str[idx].split('\t'):
-                    if sign_pair[0] in single_pollutant_profile:
-                        pollutant_name, thres = single_pollutant_profile.split(sign_pair[0])
-                    elif sign_pair[1] in single_pollutant_profile:
-                        pollutant_name, thres = single_pollutant_profile.split(sign_pair[1])
-                    if binary_outcome:
-                        label_for_hist = ['{}(Yes)'.format(outcome_folder_name),
-                                          '{}(No)'.format(outcome_folder_name)]
-                        plot_histogram(whole_df, result_dir, pollutant_name=pollutant_name,
-                                       label_plot=label_for_hist)
-                    else:
-                        plot_scatter(whole_df, result_dir, pollutant_name=pollutant_name, ylabel=outcome)
-                        plot_hist2d(whole_df, result_dir, pollutant_name=pollutant_name, ylabel=outcome)
-                if p_val < 0.05:
-                    f = open(out_path, 'w')
-                    for table in result_summary.tables:
-                        #     print(type(table))
-                        html = table.as_html()
-                        df_temp_result = pd.read_html(html, header=0, index_col=0)[0]
-                        pd.options.display.float_format = '{:,.3e}'.format
-                        if 'P>|z|' in df_temp_result.columns:
-                            # print(type(result.pvalues), type(df_temp_result.loc[:,'P>|z|']))
-                            # print(result.pvalues, df_temp_result.loc[:, 'P>|z|'])
-                            df_temp_result.loc[:, 'P>|z|'] = result.pvalues.values
-                            # print(result.pvalues, df_temp_result.loc[:,'P>|z|'])
-                        csv_buffer = StringIO()
-                        # output_file = df_temp_result.to_csv(csv_buffer, float_format='%.3e') + '\n'
-                        df_temp_result.to_csv(csv_buffer, float_format='%.3e')
-                        # print(csv_buffer.getvalue())
-                        f.write(csv_buffer.getvalue() + '\n')
-                    f.close()
+            #     for single_pollutant_profile in topk_profile_str[idx].split('\t'):
+            #         if sign_pair[0] in single_pollutant_profile:
+            #             pollutant_name, thres = single_pollutant_profile.split(sign_pair[0])
+            #         elif sign_pair[1] in single_pollutant_profile:
+            #             pollutant_name, thres = single_pollutant_profile.split(sign_pair[1])
+            #         if binary_outcome:
+            #             label_for_hist = ['{}(Yes)'.format(outcome_folder_name),
+            #                               '{}(No)'.format(outcome_folder_name)]
+            #             plot_histogram(whole_df, result_dir, pollutant_name=pollutant_name,
+            #                            label_plot=label_for_hist)
+            #         else:
+            #             plot_scatter(whole_df, result_dir, pollutant_name=pollutant_name, ylabel=outcome)
+            #             plot_hist2d(whole_df, result_dir, pollutant_name=pollutant_name, ylabel=outcome)
+            #     if p_val < 0.05:
+            #         f = open(out_path, 'w')
+            #         for table in result_summary.tables:
+            #             #     print(type(table))
+            #             html = table.as_html()
+            #             df_temp_result = pd.read_html(html, header=0, index_col=0)[0]
+            #             pd.options.display.float_format = '{:,.3e}'.format
+            #             if 'P>|z|' in df_temp_result.columns:
+            #                 # print(type(result.pvalues), type(df_temp_result.loc[:,'P>|z|']))
+            #                 # print(result.pvalues, df_temp_result.loc[:, 'P>|z|'])
+            #                 df_temp_result.loc[:, 'P>|z|'] = result.pvalues.values
+            #                 # print(result.pvalues, df_temp_result.loc[:,'P>|z|'])
+            #             csv_buffer = StringIO()
+            #             # output_file = df_temp_result.to_csv(csv_buffer, float_format='%.3e') + '\n'
+            #             df_temp_result.to_csv(csv_buffer, float_format='%.3e')
+            #             # print(csv_buffer.getvalue())
+            #             f.write(csv_buffer.getvalue() + '\n')
+            #         f.close()
 
-
+    print('Finished All regressions!')
 
         # if len(p_val_df['outcome']==output_folder_name) == 0:
     if binary_outcome:
@@ -1028,7 +1028,6 @@ def runWorkflow(**kargs):
         'mean (std) AUC score from random predictors': '{:.3e}({:.3e})'.format(np.mean(auc_rand), np.std(auc_rand)),
         'mean (std) AUC score': '{:.3e}({:.3e})'.format(np.mean(auc), np.std(auc)),
                                 test_cols[-1]: X.shape[0],
-
                                 }, ignore_index=True)
 
     return p_val_df, test_score_df
