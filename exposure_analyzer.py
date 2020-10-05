@@ -682,7 +682,7 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\t"):
         if k < topk:
             print(print_str)
         if profile_str.count('>') > 1 and count > 1 and (not '<' in profile_str):
-            print(print_str)
+            # print(print_str)
             all_greater_path[profile_str] = count
 
 
