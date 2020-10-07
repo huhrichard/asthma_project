@@ -882,30 +882,30 @@ def runWorkflow(**kargs):
             """
             profile_coef = result.params.values[0]
             p_val = result.pvalues.values[0]
-            if p_val < 0.05:
-
-
-                p, count = (profile, profile_occurrence)
-                # if count >= 5:
-                path_from = visualize_dict['paths_from'][p]
-                random.Random(8964).shuffle(path_from)
-                p_name = '_and_'.join(p.split('\t'))
-
-                tree_dir = os.path.join(outcome_dir, p_name)
-                if not os.path.exists(tree_dir):
-                    os.mkdir(tree_dir)
-
-                for path_loc in path_from[:5]:
-                    split_idx, booster_idx = path_loc
-                    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,
-                                                                        random_state=split_idx,
-                                                                        stratify=y)
-                    graph = visualize_xgb(visualize_dict['model_list'][split_idx], feature_names=fmap_fn, labels=labels,
-                                          outcome_name=outcome_dir,
-                                          num_trees=booster_idx,
-                                          file_name="split_{}_booster_{}".format(split_idx, booster_idx),
-                                          training_data=(X_train, y_train),
-                                          tree_dir=tree_dir)
+            # if p_val < 0.05:
+            #
+            #
+            #     p, count = (profile, profile_occurrence)
+            #     # if count >= 5:
+            #     path_from = visualize_dict['paths_from'][p]
+            #     random.Random(8964).shuffle(path_from)
+            #     p_name = '_and_'.join(p.split('\t'))
+            #
+            #     tree_dir = os.path.join(outcome_dir, p_name)
+            #     if not os.path.exists(tree_dir):
+            #         os.mkdir(tree_dir)
+            #
+            #     for path_loc in path_from[:5]:
+            #         split_idx, booster_idx = path_loc
+            #         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,
+            #                                                             random_state=split_idx,
+            #                                                             stratify=y)
+            #         graph = visualize_xgb(visualize_dict['model_list'][split_idx], feature_names=fmap_fn, labels=labels,
+            #                               outcome_name=outcome_dir,
+            #                               num_trees=booster_idx,
+            #                               file_name="split_{}_booster_{}".format(split_idx, booster_idx),
+            #                               training_data=(X_train, y_train),
+            #                               tree_dir=tree_dir)
 
 
             if (sign_pair[0] in topk_profile_str[idx] and sign_pair[1] in topk_profile_str[idx]) or profile_coef == 0:
