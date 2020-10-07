@@ -929,6 +929,7 @@ def runWorkflow(**kargs):
 
             if not os.path.exists(result_dir):
                 os.mkdir(result_dir)
+
             opposite_profile = topk_profile_str[idx]
 
             opposite_profile = opposite_profile.replace(sign_pair[0], 'larger')
@@ -939,7 +940,7 @@ def runWorkflow(**kargs):
             opposite_files = find('occur_*{}_coef*.csv'.format(opposite_profile), result_dir)
             # opposite_files = [f for f in opposite_files if ' ' not in f]
             # print(topk_profile_str[idx], opposite_profile, opposite_files)
-            if len(opposite_files) == 0:
+            if len(opposite_files) == 0 and len(path.split('\t')) > 1:
                 cols = p_val_df.columns
                 p_val_df = p_val_df.append({cols[0]: topk_profile_str[idx],
                                  cols[1]: outcome_folder_name,
