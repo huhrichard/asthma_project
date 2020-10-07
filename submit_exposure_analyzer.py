@@ -30,10 +30,11 @@ for outcome in outcome_binary_dict:
     outcome_replaced = outcome.replace('(', '\(').replace(')', '\)')
     python_cmd = "python exposure_analyzer.py {} {}".format(outcome_replaced, suffix)
 
-    lsf_name = "{}.lsf".format(outcome_replaced)
+    lsf_name = "{}.lsf".format(outcome)
+    lsf_replaced_name = "{}.lsf".format(outcome_replaced)
     script = open(lsf_name, 'w')
     script.write(lsf_str)
     script.write(python_cmd)
     script.close()
-    os.system("bsub < {}".format(lsf_name))
+    os.system("bsub < {}".format(lsf_replaced_name))
     os.remove(lsf_name)
