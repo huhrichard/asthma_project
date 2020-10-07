@@ -673,9 +673,9 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\t"):
         for idx, pollutant in enumerate(path.split(sep)):
             # print()
             profile_str += "{}{}{:.3e}{}".format(sep,pollutant, paths_thres[path][idx], sep)
-            # plot_histogram(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
-            # plot_scatter(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
-            # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
+        # plot_histogram(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
+        # plot_scatter(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
+        # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
 
         print_str = "{}th paths ({}):{}".format(k, count, profile_str[:-1])
         topk_profile_with_value_str.append(profile_str[1:-1])
@@ -823,8 +823,13 @@ def runWorkflow(**kargs):
         """
 
         np.random.seed(0)
+        print(len(topk_profile_str))
+        profile_counter = 0
         for idx, (profile, profile_occurrence) in enumerate(sorted_paths):
             # print(y)
+            print(profile_counter)
+            if profile_counter > (len(sorted_paths)*0.1):
+                break
             binary_profile = profile_indicator_function(path=profile,
                                                         feature_idx=feature_idx_dict,
                                                         path_threshold=paths_median_threshold[profile],
@@ -872,14 +877,16 @@ def runWorkflow(**kargs):
             result_summary = result.summary()
 
             """
-            Since pvalue cannot be shown in scientific notation by simply as_csv(), 
+            Since pvalue cannot be shown in scientific notation by simply as_csv(),
             addition lines are written
             """
             profile_coef = result.params.values[0]
             p_val = result.pvalues.values[0]
             if p_val < 0.05:
 
+
                 p, count = (profile, profile_occurrence)
+                # if count >= 5:
                 path_from = visualize_dict['paths_from'][p]
                 random.Random(8964).shuffle(path_from)
                 p_name = '_and_'.join(p.split('\t'))
@@ -940,7 +947,8 @@ def runWorkflow(**kargs):
             opposite_files = find('occur_*{}_coef*.csv'.format(opposite_profile), result_dir)
             # opposite_files = [f for f in opposite_files if ' ' not in f]
             # print(topk_profile_str[idx], opposite_profile, opposite_files)
-            if len(opposite_files) == 0 and len(path.split('\t')) > 1:
+            if (len(opposite_files) == 0 ) or (len(path.split('\t')) > 1):
+                profile_counter += 1
                 cols = p_val_df.columns
                 p_val_df = p_val_df.append({cols[0]: topk_profile_str[idx],
                                  cols[1]: outcome_folder_name,
@@ -1058,6 +1066,7 @@ if __name__ == "__main__":
                            }
 
     # suffix = 'nbt_xgb_multiple_counts'
+    outcome = sys.argv[-2]
     suffix = sys.argv[-1]
     xgb_predict = True
     plot_predir = './plot_{}'.format(suffix)
@@ -1079,86 +1088,51 @@ if __name__ == "__main__":
         'birth_yr': [5],
         # 'diagnose_yr': [-5]
     }
-    for yr_name, yr_f_list in yr_dict.items():
-        for yr_f in yr_f_list:
-            pvalue_df_yr_list = []
-            pred_score_df_yr_list = []
-            for outcome, binary_out in outcome_binary_dict.items():
-                # file_format = '{}_7pollutants_no_impute_*.csv'.format(outcome)
-                # file_format = '{}_NATA_diagnose_yr.csv'.format(outcome)
-                if not(yr_name == 'diagnose_yr' and outcome == 'asthma'):
+    yr_name = "birth_yr"
+    yr_f = 5
+    binary_out = outcome_binary_dict[outcome]
 
-                    m_Dir = os.path.join(os.getcwd(), 'plot/{}/'.format(suffix))
-                    if not os.path.exists(m_Dir):
-                        os.mkdir(m_Dir)
-                    plotDir = os.path.join(m_Dir, 'nata_{}_{}'.format(yr_name, yr_f))
-                    if not os.path.exists(plotDir):
-                        os.mkdir(plotDir)
-                    pvalue_df = pd.DataFrame(columns=['profile', 'outcome', 'p_val', 'relation',
-                                                      'coef', 'freq', 'pos_count', 'neg_count', 'binary_outcome',
-                                                      'max_count'
+    m_Dir = os.path.join(os.getcwd(), 'plot/{}/'.format(suffix))
+    if not os.path.exists(m_Dir):
+        os.mkdir(m_Dir)
+    plotDir = os.path.join(m_Dir, 'nata_{}_{}'.format(yr_name, yr_f))
+    if not os.path.exists(plotDir):
+        os.mkdir(plotDir)
+    pvalue_df = pd.DataFrame(columns=['profile', 'outcome', 'p_val', 'relation',
+                                      'coef', 'freq', 'pos_count', 'neg_count', 'binary_outcome',
+                                      'max_count'
 
-                                                      ])
-                    pred_score_df = pd.DataFrame(columns=['outcome', 'binary_outcome', 'mode of min_samples_of_leaf', 'year from',
-                                                          'mean (std) r2 score from random predictors',
-                                                          'mean (std) r2 score',
-                                                          'mean (std) f score (minority) from random predictors',
-                                                          'mean (std) f score (minority)',
-                                                          'mean (std) f score (majority) from random predictors',
-                                                          'mean (std) f score (majority)',
-                                                          'mean (std) AUC score from random predictors',
-                                                          'mean (std) AUC score',
-                                                          'num_patients'
-                                                          ])
-                    file_format = '{}_NATA_{}_{}.csv'.format(outcome, yr_name, yr_f)
-                    file_list = find(file_format, path)
-                    for file in file_list:
-                        print(file)
-                        if yr_f > 0:
-                            year_name_detail = yr_name + '+' + str(yr_f)
-                        else:
-                            year_name_detail = yr_name + str(yr_f)
-                        pvalue_df, pred_score_df = runWorkflow(input_file=file,
-                                                # binary_outcome=binary_out,
-                                                output_folder_name=outcome,
-                                                p_val_df=pvalue_df,
-                                                yr_name=year_name_detail,
-                                                test_score_df = pred_score_df,
-                                                xgb=xgb_predict
-                                                # outcome_name = outcome
-                                                )
-                        # print('before dropped', pvalue_df.shape)
-                        pvalue_df.dropna(axis=0, how='any', inplace=True)
-                        # print('after dropped', pvalue_df.shape)
-                        pvalue_df_yr_list.append(pvalue_df)
-                        pred_score_df_yr_list.append(pred_score_df)
-                    # if outcome == 'asthma':
-                    #     p_val_col = pvalue_df['p_val'].values
-                    #     rejected, fdr = fdrcorrection(p_val_col)
-                    #     no_cols = len(pvalue_df.columns)
-                    #     pvalue_df.insert(no_cols, "fdr", fdr, True)
-                    #
-                    #
+                                      ])
+    pred_score_df = pd.DataFrame(columns=['outcome', 'binary_outcome', 'mode of min_samples_of_leaf', 'year from',
+                                          'mean (std) r2 score from random predictors',
+                                          'mean (std) r2 score',
+                                          'mean (std) f score (minority) from random predictors',
+                                          'mean (std) f score (minority)',
+                                          'mean (std) f score (majority) from random predictors',
+                                          'mean (std) f score (majority)',
+                                          'mean (std) AUC score from random predictors',
+                                          'mean (std) AUC score',
+                                          'num_patients'
+                                          ])
+    file_format = '{}_NATA_{}_{}.csv'.format(outcome, yr_name, yr_f)
+    file_list = find(file_format, path)
+    file = file_list[0]
+    if yr_f > 0:
+        year_name_detail = yr_name + '+' + str(yr_f)
+    else:
+        year_name_detail = yr_name + str(yr_f)
+    pvalue_df, pred_score_df = runWorkflow(input_file=file,
+                            # binary_outcome=binary_out,
+                            output_folder_name=outcome,
+                            p_val_df=pvalue_df,
+                            yr_name=year_name_detail,
+                            test_score_df = pred_score_df,
+                            xgb=xgb_predict
+                            # outcome_name = outcome
+                            )
+    # print('before dropped', pvalue_df.shape)
+    pvalue_df.dropna(axis=0, how='any', inplace=True)
 
+    pvalue_df.to_csv('fdr_{}_{}.csv'.format(outcome, suffix), index=False, header=True)
 
-            pvalue_df_cat = pd.concat(pvalue_df_yr_list)
-            # pvalue_df_cat = pd.read_csv('fdr.csv')
-            pred_score_df_cat = pd.concat(pred_score_df_yr_list)
-            pvalue_df_cat['fdr'] = 0.0
-            bool_list_fdr = [
-                            pvalue_df_cat['outcome']=='asthma',
-                             (pvalue_df_cat['outcome']!='asthma') & (pvalue_df_cat['binary_outcome'] == True),
-                             (pvalue_df_cat['outcome'] != 'asthma') & (pvalue_df_cat['binary_outcome'] == False)
-                             ]
-            for b in bool_list_fdr:
-                pvalue_df_cat.loc[b,'fdr'] = fdrcorrection(pvalue_df_cat.loc[b,'p_val'].values)[-1]
-
-            pvalue_df_list.append(pvalue_df_cat)
-            pred_score_df_list.append(pred_score_df_cat)
-
-    pvalue_df_cat_all = pd.concat(pvalue_df_list)
-
-    pvalue_df_cat_all.to_csv('fdr_{}.csv'.format(suffix), index=False, header=True)
-
-    pred_score_df_cat_all = pd.concat(pred_score_df_list)
-    pred_score_df_cat_all.to_csv('pred_score_{}.csv'.format(suffix), index=False, header=True)
+    pred_score_df.to_csv('pred_score_{}_{}.csv'.format(outcome, suffix), index=False, header=True)
