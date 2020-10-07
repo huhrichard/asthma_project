@@ -27,9 +27,10 @@ for outcome in outcome_binary_dict:
     lsf_str = "#!/bin/bash\n#BSUB -J asthma_project\n#BSUB -P acc_pandeg01a\n#BSUB -q express\n" \
               "#BSUB -n 4\n#BSUB -W 12:00\n#BSUB -o analyzer_%J.stdout\n#BSUB -eo analyzer_%J.stderr\n" \
               "#BSUB -R rusage[mem=10000]\nmodule purge\n"
-    python_cmd = "python exposure_analyzer.py {} {}".format(outcome, suffix)
+    outcome_replaced = outcome.replace('(', '\(').replace(')', '\)')
+    python_cmd = "python exposure_analyzer.py {} {}".format(outcome_replaced, suffix)
 
-    lsf_name = "{}.lsf".format(outcome)
+    lsf_name = "{}.lsf".format(outcome_replaced)
     script = open(lsf_name, 'w')
     script.write(lsf_str)
     script.write(python_cmd)
