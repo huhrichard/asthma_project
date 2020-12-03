@@ -546,7 +546,7 @@ def analyze_path(X, y, model=None, p_grid={}, feature_set=[], n_trials=100, n_tr
         # print(y_train.unique())
         model = classify(X_train, y_train, params={}, random_state=i, binary_outcome=binary_outcome, xgb=xgb)
         # print('training:\n',model.get_booster().get_dump(with_stats=True)[50])
-        # graph = visualize_xgb(model, feature_names=fmap_fn, labels=labels, file_name="{}th_tree".format(i), ext='tif', outcome_name=outcome_name)
+        graph = visualize_xgb(model, feature_names=fmap_fn, labels=labels, file_name="{}th_tree".format(i), ext='tif', outcome_name=outcome_name)
         model_list.append(model)
         """
         Testing
@@ -876,12 +876,23 @@ def runWorkflow(**kargs):
 
             result_summary = result.summary()
 
+
+
             """
             Since pvalue cannot be shown in scientific notation by simply as_csv(),
             addition lines are written
             """
             profile_coef = result.params.values[0]
             p_val = result.pvalues.values[0]
+
+            params = result.params
+            conf = result.conf_int()
+            conf['Odds Ratio'] = params
+            conf.columns = ['5%', '95%', 'Beta_value']
+            conf_df = conf.values[0]
+
+            # effect_size_CI = np.exp(conf.values[0])
+
             # if p_val < 0.05:
             #
             #
@@ -955,11 +966,13 @@ def runWorkflow(**kargs):
                                  cols[2]: p_val,
                                  cols[3]: relation_dir.split('/')[-1],
                                  cols[4]: profile_coef,
-                                 cols[5]: profile_occurrence,
-                                cols[6]: sum(binary_profile == 1),
-                                cols[7]: sum(binary_profile == -1),
-                                cols[8]: binary_outcome,
-                                cols[9]: list_params['max_count']
+                                 cols[5]: coef_df[0],
+                                 cols[6]: coef_df[1],
+                                 cols[7]: profile_occurrence,
+                                cols[8]: sum(binary_profile == 1),
+                                cols[9]: sum(binary_profile == -1),
+                                cols[10]: binary_outcome,
+                                cols[11]: list_params['max_count']
                                 # cols[9]: np.mean(np.array(scores)),
                                 # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
                                 }, ignore_index=True)
@@ -1045,9 +1058,9 @@ if __name__ == "__main__":
     # file_format = 'act_score_7pollutants_no_impute_*.csv'
     # binary_out = False if 'True' != sys.argv[-2] else True
     outcome_binary_dict = {
-                            'asthma': True,
+                            # 'asthma': True,
                             # 'asthma(act_score)':False,
-                            'age_greaterthan5_diagnosed_asthma': True,
+                            # 'age_greaterthan5_diagnosed_asthma': True,
                             # 'age_diagnosed_asthma': False,
                             'daily_controller_past6months': True,
                             'emergency_dept': True,
@@ -1062,7 +1075,7 @@ if __name__ == "__main__":
                            #  'hospitalize_overnight_pastyr_count(greaterthan0)': True,
                            #  'hospitalize_overnight_pastyr_count(greaterthan_nz_median)': True,
                            #  'regular_asthma_symptoms_daysCount_pastWeek(greaterthan0)': True,
-                            'regular_asthma_symptoms_daysCount_pastWeek(greaterthan_nz_median)': True
+                           #  'regular_asthma_symptoms_daysCount_pastWeek(greaterthan_nz_median)': True
                            }
 
     # suffix = 'nbt_xgb_multiple_counts'
@@ -1099,7 +1112,7 @@ if __name__ == "__main__":
     if not os.path.exists(plotDir):
         os.mkdir(plotDir)
     pvalue_df = pd.DataFrame(columns=['profile', 'outcome', 'p_val', 'relation',
-                                      'coef', 'freq', 'pos_count', 'neg_count', 'binary_outcome',
+                                      'coef', 'coef_95CI_lower', 'coef_95CI_upper','freq', 'pos_count', 'neg_count', 'binary_outcome',
                                       'max_count'
 
                                       ])
