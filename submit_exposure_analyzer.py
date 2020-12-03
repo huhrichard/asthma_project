@@ -3,9 +3,9 @@ import os
 
 suffix = sys.argv[-1]
 outcome_binary_dict = {
-    'asthma': True,
+    # 'asthma': True,
     # 'asthma(act_score)':False,
-    'age_greaterthan5_diagnosed_asthma': True,
+    # 'age_greaterthan5_diagnosed_asthma': True,
     # 'age_diagnosed_asthma': False,
     'daily_controller_past6months': True,
     'emergency_dept': True,
@@ -20,7 +20,7 @@ outcome_binary_dict = {
     #  'hospitalize_overnight_pastyr_count(greaterthan0)': True,
     #  'hospitalize_overnight_pastyr_count(greaterthan_nz_median)': True,
     #  'regular_asthma_symptoms_daysCount_pastWeek(greaterthan0)': True,
-    'regular_asthma_symptoms_daysCount_pastWeek(greaterthan_nz_median)': True
+    # 'regular_asthma_symptoms_daysCount_pastWeek(greaterthan_nz_median)': True
 }
 
 for outcome in outcome_binary_dict:
