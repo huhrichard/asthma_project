@@ -830,199 +830,199 @@ def runWorkflow(**kargs):
             print(profile_counter)
             # if profile_counter > (len(sorted_paths)*0.1):
             #     break
-            # if profile_occurrence < 10:
-            binary_profile = profile_indicator_function(path=profile,
-                                                        feature_idx=feature_idx_dict,
-                                                        path_threshold=paths_median_threshold[profile],
-                                                        X=X, sign_pair=sign_pair
-                                                        )
-            binary_profile = np.array(binary_profile)
-            print(profile,' pos_count :', sum(binary_profile==1), 'out of ', binary_profile.shape[0])
-            profile_df = pd.DataFrame({topk_profile_str[idx]: binary_profile})
-            regression_x_df = pd.concat([profile_df, confounders_df], axis=1)
-            all_equal_drop_col = []
-            for col in regression_x_df:
-                unique_value = regression_x_df[col].unique()
-                if len(unique_value) == 1:
-                    all_equal_drop_col.append(col)
-            # print('Column(s) with all equal entries:', all_equal_drop_col)
+            if profile_occurrence > 10:
+                binary_profile = profile_indicator_function(path=profile,
+                                                            feature_idx=feature_idx_dict,
+                                                            path_threshold=paths_median_threshold[profile],
+                                                            X=X, sign_pair=sign_pair
+                                                            )
+                binary_profile = np.array(binary_profile)
+                print(profile,' pos_count :', sum(binary_profile==1), 'out of ', binary_profile.shape[0])
+                profile_df = pd.DataFrame({topk_profile_str[idx]: binary_profile})
+                regression_x_df = pd.concat([profile_df, confounders_df], axis=1)
+                all_equal_drop_col = []
+                for col in regression_x_df:
+                    unique_value = regression_x_df[col].unique()
+                    if len(unique_value) == 1:
+                        all_equal_drop_col.append(col)
+                # print('Column(s) with all equal entries:', all_equal_drop_col)
 
-            regression_x_df.drop(all_equal_drop_col, axis=1, inplace=True)
+                regression_x_df.drop(all_equal_drop_col, axis=1, inplace=True)
 
-            try:
-                X_np = np.array(regression_x_df)
-                X_corr = np.corrcoef(X_np, rowvar=0)
-                # print(X_corr)
-                w, v = np.linalg.eig(X_corr)
-                # print('{} eigenvalues: {}'.format(profile, w))
-                # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
-                regression_x_df['intercept'] = 1.0
-                if binary_outcome:
-                    regressor_with_confounders = sm.Logit(y, regression_x_df)
-                else:
-                    regressor_with_confounders = sm.OLS(y, regression_x_df)
+                try:
+                    X_np = np.array(regression_x_df)
+                    X_corr = np.corrcoef(X_np, rowvar=0)
+                    # print(X_corr)
+                    w, v = np.linalg.eig(X_corr)
+                    # print('{} eigenvalues: {}'.format(profile, w))
+                    # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
+                    regression_x_df['intercept'] = 1.0
+                    if binary_outcome:
+                        regressor_with_confounders = sm.Logit(y, regression_x_df)
+                    else:
+                        regressor_with_confounders = sm.OLS(y, regression_x_df)
 
-                # result = regressor_with_confounders.fit(skip_hessian=True)
-                result = regressor_with_confounders.fit()
-
-            except Exception as inst:
-
-                regression_x_df['intercept'] = 1.0
-                if binary_outcome:
-                    regressor_with_confounders = sm.Logit(y, regression_x_df)
-                    result = regressor_with_confounders.fit(method='bfgs')
-                else:
-                    regressor_with_confounders = sm.OLS(y, regression_x_df)
+                    # result = regressor_with_confounders.fit(skip_hessian=True)
                     result = regressor_with_confounders.fit()
 
-            result_summary = result.summary()
+                except Exception as inst:
+
+                    regression_x_df['intercept'] = 1.0
+                    if binary_outcome:
+                        regressor_with_confounders = sm.Logit(y, regression_x_df)
+                        result = regressor_with_confounders.fit(method='bfgs')
+                    else:
+                        regressor_with_confounders = sm.OLS(y, regression_x_df)
+                        result = regressor_with_confounders.fit()
+
+                result_summary = result.summary()
 
 
 
-            """
-            Since pvalue cannot be shown in scientific notation by simply as_csv(),
-            addition lines are written
-            """
-            profile_coef = result.params.values[0]
-            p_val = result.pvalues.values[0]
+                """
+                Since pvalue cannot be shown in scientific notation by simply as_csv(),
+                addition lines are written
+                """
+                profile_coef = result.params.values[0]
+                p_val = result.pvalues.values[0]
 
-            params = result.params
-            conf = result.conf_int()
-            conf['Odds Ratio'] = params
-            conf.columns = ['5%', '95%', 'Beta_value']
-            conf_df = conf.values[0]
+                params = result.params
+                conf = result.conf_int()
+                conf['Odds Ratio'] = params
+                conf.columns = ['5%', '95%', 'Beta_value']
+                conf_df = conf.values[0]
 
-            # effect_size_CI = np.exp(conf.values[0])
+                # effect_size_CI = np.exp(conf.values[0])
 
-            if p_val < 0.05:
-
-
-                p, count = (profile, profile_occurrence)
-                # if count >= 5:
-                path_from = visualize_dict['paths_from'][p]
-                random.Random(8964).shuffle(path_from)
-                p_name = '_and_'.join(p.split('\t'))
-
-                tree_dir = os.path.join(outcome_dir, p_name)
-                if not os.path.exists(tree_dir):
-                    os.mkdir(tree_dir)
-
-                for path_loc in path_from[:5]:
-                    split_idx, booster_idx = path_loc
-                    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,
-                                                                        random_state=split_idx,
-                                                                        stratify=y)
-                    profile_group = ''
-                    profile_str = topk_profile_str[idx]
-                    if (profile_str.count('>') > 1) & (profile_str.count('<') == 0) & profile_str.count('\n') > 0:
-                        profile_group = 'all_greater'
-                    elif (profile_str.count('<') > 1) & (profile_str.count('>') == 0) & profile_str.count('\n') > 0:
-                        profile_group = 'all_less'
-                    elif profile_str.count('\n') > 0:
-                        profile_group = 'mixed_sign_multi_pollutants'
-                    elif profile_str.count('\n') == 0:
-                        profile_group = 'single_pollutant'
-                    tree_sub_dir = os.path.join(outcome_dir, profile_group)
-                    if not os.path.exists(tree_sub_dir):
-                        os.mkdir(tree_sub_dir)
-
-                    graph = visualize_xgb(visualize_dict['model_list'][split_idx], feature_names=fmap_fn, labels=labels,
-                                          outcome_name=tree_sub_dir,
-                                          num_trees=booster_idx,
-                                          file_name="split_{}_booster_{}".format(split_idx, booster_idx),
-                                          training_data=(X_train, y_train),
-                                          tree_dir=tree_dir)
+                if p_val < 0.05:
 
 
-            if (sign_pair[0] in topk_profile_str[idx] and sign_pair[1] in topk_profile_str[idx]) or profile_coef == 0:
-                relation_dir = possibleDirs[-1]
-            elif (sign_pair[0] in topk_profile_str[idx] and profile_coef < 0) or (sign_pair[1] in topk_profile_str[idx] and profile_coef > 0):
-                relation_dir = possibleDirs[0]
-            elif (sign_pair[0] in topk_profile_str[idx] and profile_coef > 0) or (sign_pair[1] in topk_profile_str[idx] and profile_coef < 0):
-                relation_dir = possibleDirs[1]
+                    p, count = (profile, profile_occurrence)
+                    # if count >= 5:
+                    path_from = visualize_dict['paths_from'][p]
+                    random.Random(8964).shuffle(path_from)
+                    p_name = '_and_'.join(p.split('\t'))
 
-            result_dir = os.path.join(relation_dir, file_prefix)
+                    tree_dir = os.path.join(outcome_dir, p_name)
+                    if not os.path.exists(tree_dir):
+                        os.mkdir(tree_dir)
+
+                    for path_loc in path_from[:5]:
+                        split_idx, booster_idx = path_loc
+                        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,
+                                                                            random_state=split_idx,
+                                                                            stratify=y)
+                        profile_group = ''
+                        profile_str = topk_profile_str[idx]
+                        if (profile_str.count('>') > 1) & (profile_str.count('<') == 0) & profile_str.count('\n') > 0:
+                            profile_group = 'all_greater'
+                        elif (profile_str.count('<') > 1) & (profile_str.count('>') == 0) & profile_str.count('\n') > 0:
+                            profile_group = 'all_less'
+                        elif profile_str.count('\n') > 0:
+                            profile_group = 'mixed_sign_multi_pollutants'
+                        elif profile_str.count('\n') == 0:
+                            profile_group = 'single_pollutant'
+                        tree_sub_dir = os.path.join(outcome_dir, profile_group)
+                        if not os.path.exists(tree_sub_dir):
+                            os.mkdir(tree_sub_dir)
+
+                        graph = visualize_xgb(visualize_dict['model_list'][split_idx], feature_names=fmap_fn, labels=labels,
+                                              outcome_name=tree_sub_dir,
+                                              num_trees=booster_idx,
+                                              file_name="split_{}_booster_{}".format(split_idx, booster_idx),
+                                              training_data=(X_train, y_train),
+                                              tree_dir=tree_dir)
 
 
+                if (sign_pair[0] in topk_profile_str[idx] and sign_pair[1] in topk_profile_str[idx]) or profile_coef == 0:
+                    relation_dir = possibleDirs[-1]
+                elif (sign_pair[0] in topk_profile_str[idx] and profile_coef < 0) or (sign_pair[1] in topk_profile_str[idx] and profile_coef > 0):
+                    relation_dir = possibleDirs[0]
+                elif (sign_pair[0] in topk_profile_str[idx] and profile_coef > 0) or (sign_pair[1] in topk_profile_str[idx] and profile_coef < 0):
+                    relation_dir = possibleDirs[1]
 
-                # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
-
-            out_path = os.path.join(result_dir, "occur_{}_{}_coef_{:.3e}_pval={:.3e}.csv".format(profile_occurrence,
-                                                                                             topk_profile_str[idx],
-                                                                                        profile_coef,
-                                                                                     p_val))
+                result_dir = os.path.join(relation_dir, file_prefix)
 
 
 
-            # print(out_path)
-            # result_summary.as_csv(out_path)
+                    # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
 
-            # profile_coef
-            #
+                out_path = os.path.join(result_dir, "occur_{}_{}_coef_{:.3e}_pval={:.3e}.csv".format(profile_occurrence,
+                                                                                                 topk_profile_str[idx],
+                                                                                            profile_coef,
+                                                                                         p_val))
 
-            if not os.path.exists(result_dir):
-                os.mkdir(result_dir)
 
-            opposite_profile = topk_profile_str[idx]
 
-            opposite_profile = opposite_profile.replace(sign_pair[0], 'larger')
-            opposite_profile = opposite_profile.replace(sign_pair[1], 'smaller')
-            opposite_profile = opposite_profile.replace('larger', sign_pair[1])
-            opposite_profile = opposite_profile.replace('smaller', sign_pair[0])
+                # print(out_path)
+                # result_summary.as_csv(out_path)
 
-            opposite_files = find('occur_*{}_coef*.csv'.format(opposite_profile), result_dir)
-            # opposite_files = [f for f in opposite_files if ' ' not in f]
-            # print(topk_profile_str[idx], opposite_profile, opposite_files)
-            if (len(opposite_files) == 0 ) or (len(path.split('\t')) > 1):
-                profile_counter += 1
-                cols = p_val_df.columns
-                p_val_df = p_val_df.append({cols[0]: topk_profile_str[idx],
-                                 cols[1]: outcome_folder_name,
-                                 cols[2]: p_val,
-                                 cols[3]: relation_dir.split('/')[-1],
-                                 cols[4]: profile_coef,
-                                 cols[5]: conf_df[0],
-                                 cols[6]: conf_df[1],
-                                 cols[7]: profile_occurrence,
-                                cols[8]: sum(binary_profile == 1),
-                                cols[9]: sum(binary_profile == -1),
-                                cols[10]: binary_outcome,
-                                cols[11]: list_params['max_count']
-                                # cols[9]: np.mean(np.array(scores)),
-                                # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
-                                }, ignore_index=True)
-                # print(p_val_df)
-            #     for single_pollutant_profile in topk_profile_str[idx].split('\t'):
-            #         if sign_pair[0] in single_pollutant_profile:
-            #             pollutant_name, thres = single_pollutant_profile.split(sign_pair[0])
-            #         elif sign_pair[1] in single_pollutant_profile:
-            #             pollutant_name, thres = single_pollutant_profile.split(sign_pair[1])
-            #         if binary_outcome:
-            #             label_for_hist = ['{}(Yes)'.format(outcome_folder_name),
-            #                               '{}(No)'.format(outcome_folder_name)]
-            #             plot_histogram(whole_df, result_dir, pollutant_name=pollutant_name,
-            #                            label_plot=label_for_hist)
-            #         else:
-            #             plot_scatter(whole_df, result_dir, pollutant_name=pollutant_name, ylabel=outcome)
-            #             plot_hist2d(whole_df, result_dir, pollutant_name=pollutant_name, ylabel=outcome)
-            #     if p_val < 0.05:
-            #         f = open(out_path, 'w')
-            #         for table in result_summary.tables:
-            #             #     print(type(table))
-            #             html = table.as_html()
-            #             df_temp_result = pd.read_html(html, header=0, index_col=0)[0]
-            #             pd.options.display.float_format = '{:,.3e}'.format
-            #             if 'P>|z|' in df_temp_result.columns:
-            #                 # print(type(result.pvalues), type(df_temp_result.loc[:,'P>|z|']))
-            #                 # print(result.pvalues, df_temp_result.loc[:, 'P>|z|'])
-            #                 df_temp_result.loc[:, 'P>|z|'] = result.pvalues.values
-            #                 # print(result.pvalues, df_temp_result.loc[:,'P>|z|'])
-            #             csv_buffer = StringIO()
-            #             # output_file = df_temp_result.to_csv(csv_buffer, float_format='%.3e') + '\n'
-            #             df_temp_result.to_csv(csv_buffer, float_format='%.3e')
-            #             # print(csv_buffer.getvalue())
-            #             f.write(csv_buffer.getvalue() + '\n')
-            #         f.close()
+                # profile_coef
+                #
+
+                if not os.path.exists(result_dir):
+                    os.mkdir(result_dir)
+
+                opposite_profile = topk_profile_str[idx]
+
+                opposite_profile = opposite_profile.replace(sign_pair[0], 'larger')
+                opposite_profile = opposite_profile.replace(sign_pair[1], 'smaller')
+                opposite_profile = opposite_profile.replace('larger', sign_pair[1])
+                opposite_profile = opposite_profile.replace('smaller', sign_pair[0])
+
+                opposite_files = find('occur_*{}_coef*.csv'.format(opposite_profile), result_dir)
+                # opposite_files = [f for f in opposite_files if ' ' not in f]
+                # print(topk_profile_str[idx], opposite_profile, opposite_files)
+                if (len(opposite_files) == 0 ) or (len(path.split('\t')) > 1):
+                    profile_counter += 1
+                    cols = p_val_df.columns
+                    p_val_df = p_val_df.append({cols[0]: topk_profile_str[idx],
+                                     cols[1]: outcome_folder_name,
+                                     cols[2]: p_val,
+                                     cols[3]: relation_dir.split('/')[-1],
+                                     cols[4]: profile_coef,
+                                     cols[5]: conf_df[0],
+                                     cols[6]: conf_df[1],
+                                     cols[7]: profile_occurrence,
+                                    cols[8]: sum(binary_profile == 1),
+                                    cols[9]: sum(binary_profile == -1),
+                                    cols[10]: binary_outcome,
+                                    cols[11]: list_params['max_count']
+                                    # cols[9]: np.mean(np.array(scores)),
+                                    # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
+                                    }, ignore_index=True)
+                    # print(p_val_df)
+                #     for single_pollutant_profile in topk_profile_str[idx].split('\t'):
+                #         if sign_pair[0] in single_pollutant_profile:
+                #             pollutant_name, thres = single_pollutant_profile.split(sign_pair[0])
+                #         elif sign_pair[1] in single_pollutant_profile:
+                #             pollutant_name, thres = single_pollutant_profile.split(sign_pair[1])
+                #         if binary_outcome:
+                #             label_for_hist = ['{}(Yes)'.format(outcome_folder_name),
+                #                               '{}(No)'.format(outcome_folder_name)]
+                #             plot_histogram(whole_df, result_dir, pollutant_name=pollutant_name,
+                #                            label_plot=label_for_hist)
+                #         else:
+                #             plot_scatter(whole_df, result_dir, pollutant_name=pollutant_name, ylabel=outcome)
+                #             plot_hist2d(whole_df, result_dir, pollutant_name=pollutant_name, ylabel=outcome)
+                #     if p_val < 0.05:
+                #         f = open(out_path, 'w')
+                #         for table in result_summary.tables:
+                #             #     print(type(table))
+                #             html = table.as_html()
+                #             df_temp_result = pd.read_html(html, header=0, index_col=0)[0]
+                #             pd.options.display.float_format = '{:,.3e}'.format
+                #             if 'P>|z|' in df_temp_result.columns:
+                #                 # print(type(result.pvalues), type(df_temp_result.loc[:,'P>|z|']))
+                #                 # print(result.pvalues, df_temp_result.loc[:, 'P>|z|'])
+                #                 df_temp_result.loc[:, 'P>|z|'] = result.pvalues.values
+                #                 # print(result.pvalues, df_temp_result.loc[:,'P>|z|'])
+                #             csv_buffer = StringIO()
+                #             # output_file = df_temp_result.to_csv(csv_buffer, float_format='%.3e') + '\n'
+                #             df_temp_result.to_csv(csv_buffer, float_format='%.3e')
+                #             # print(csv_buffer.getvalue())
+                #             f.write(csv_buffer.getvalue() + '\n')
+                #         f.close()
 
     print('Finished All regressions!')
 
