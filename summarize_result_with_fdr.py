@@ -4,6 +4,9 @@ import os, fnmatch
 import numpy as np
 import pandas as pd
 from statsmodels.stats.multitest import fdrcorrection
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl import Workbook
+
 
 SMALL_SIZE = 8
 MEDIUM_SIZE = 10
@@ -119,9 +122,11 @@ def heatmap(data, row_labels, col_labels, ax=None,
     for edge, spine in ax.spines.items():
         spine.set_visible(False)
     ax.set_aspect(aspect='auto', adjustable='box')
+    # ax.set_aspect(aspect='auto')
+    # ax.set_aspect(aspect=0.3)
     # ax.set_xticks(np.arange(data.shape[1]+1)-.5, minor=True)
     # ax.set_yticks(np.arange(data.shape[0]+1)-.5, minor=True)
-    # ax.grid(which="minor", color="w", linestyle='-', linewidth=0)
+    ax.grid(which="minor", color="b", linestyle='-', linewidth=1)
     # ax.tick_params(which="minor", bottom=False, left=False)
 
     return im, cbar
@@ -200,9 +205,9 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
 #                 'hospitalize_overnight',
 #                 'regular_asthma_symptoms_past6months']
 outcome_list = [
-    'asthma',
+    # 'asthma',
     # 'asthma(act_score)',
-    'age_greaterthan5_diagnosed_asthma',
+    # 'age_greaterthan5_diagnosed_asthma',
     # 'age_diagnosed_asthma',
     'daily_controller_past6months',
     'emergency_dept',
@@ -211,7 +216,7 @@ outcome_list = [
     # 'hospitalize_overnight_pastyr_count',
     # 'regular_asthma_symptoms_past6months',
     # 'regular_asthma_symptoms_daysCount_pastWeek'
-    'regular_asthma_symptoms_daysCount_pastWeek(greaterthan_nz_median)'
+    # 'regular_asthma_symptoms_daysCount_pastWeek(greaterthan_nz_median)'
 ]
 
 outcome_col_rename = {
@@ -237,18 +242,18 @@ outcome_col_rename = {
 #
 # fdr_df.loc[fdr_df.apply(lambda x: '(Cont.)' in x['outcome'], axis=1), 'fdr'] = fdr_cont
 # fdr_df.loc[fdr_df.apply(lambda x: '(Binary)' in x['outcome'], axis=1), 'fdr'] = fdr_bin
-# relation_dict = {'pos_correlate': 2.0,
-#                  # 'mixed_sign_profile': 0.0,
-#                  'neg_correlate': 1.0,
-#                  # 'na': 0
-#                  }
-
-
-relation_dict = {'Positive Coef.': 2.0,
+relation_dict = {'pos_correlate': 2.0,
                  # 'mixed_sign_profile': 0.0,
-                 'Negative Coef.': 1.0,
+                 'neg_correlate': 1.0,
                  # 'na': 0
                  }
+
+
+# relation_dict = {'Positive Coef.': 2.0,
+#                  # 'mixed_sign_profile': 0.0,
+#                  'Negative Coef.': 1.0,
+#                  # 'na': 0
+#                  }
 
 # relation_dict_inv = {v:k for k, v in relation_dict.items()}
 relation_list = [k for k in relation_dict]
@@ -259,7 +264,7 @@ relation_list.append('NA')
 relation_inv_dict = {v: k for k, v in relation_dict.items()}
 
 
-def summarize_plot(col='p_val', pollutant_suffix='', method_suffix='', outcome_col_table={}):
+def summarize_plot(col='fdr', pollutant_suffix='', method_suffix='', outcome_col_table={}):
     print(pollutant_suffix)
     # for idx, outcome in enumerate(outcome_list):
     plot_dir = "./plot/{}/".format(method_suffix)
@@ -281,13 +286,19 @@ def summarize_plot(col='p_val', pollutant_suffix='', method_suffix='', outcome_c
 
     # pollutant_list = ['EC', 'OC', 'SO4', 'NH4', 'Nit', 'NO2', 'PM2.5']
 
-    fdr_path = './fdr_{}.csv'.format(method_suffix)
+    fdr_path = './fdr_{}_count10.csv'.format(method_suffix)
     fdr_df = pd.read_csv(fdr_path, sep=',')
+    fdr_df = fdr_df.loc[fdr_df['outcome'].isin(outcome_list)]
+    print(fdr_df['outcome'].unique())
+    fdr_df.loc[:,'fdr'] = fdrcorrection(fdr_df.loc[:,'p_val'].values)[-1]
     # print(fdr_df)
     # str_matched = fdr_df['profile'].str.contains(pollutant_suffix, regex=False)
     # print(str_matched)
     # fdr_df = fdr_df[str_matched]
+
     fdr_df = fdr_df.loc[fdr_df['fdr'] < 0.05]
+
+    fdr_df = fdr_df.loc[fdr_df['outcome'] != 'asthma']
     fdr_df['profile'] = fdr_df['profile'].str.replace(pollutant_suffix, '', regex=False)
     single_pollutantTimeWin = dict()
     multi_pollutantTimeWin = dict()
@@ -309,11 +320,14 @@ def summarize_plot(col='p_val', pollutant_suffix='', method_suffix='', outcome_c
     for row_idx, pollutant_row in fdr_df.iterrows():
         idx = outcome_idx_dict[pollutant_row['outcome']]
         pollutant_profile = pollutant_row['profile'].split('\t\t')
+        # print(pollutant_profile, len(pollutant_profile))
 
         relation_to_outcome = pollutant_row['relation']
         # print(pollutant_row)
         if len(pollutant_profile) == 1:
-            set_p_fdr = pollutant_profile[0]
+            # set_p_fdr = pollutant_profile[0]
+            set_p_fdr = pollutant_profile[0].split(sign_pair[1])[0].split(sign_pair[0])[0]
+            print(set_p_fdr)
             # list_profile_thres[]
             if set_p_fdr in single_pollutant_fdr:
                 single_pollutant_fdr[set_p_fdr][idx] = pollutant_row[col]
@@ -327,7 +341,7 @@ def summarize_plot(col='p_val', pollutant_suffix='', method_suffix='', outcome_c
                 single_pollutant_freq[set_p_fdr] = np.zeros(len(outcome_list))
                 single_pollutant_freq[set_p_fdr][idx] = abs(pollutant_row['freq'])
         else:
-            print(pollutant_profile)
+            # print(pollutant_profile)
             p_thres = []
             p_wo_thres = []
             # set_p_with_sign = []
@@ -341,7 +355,8 @@ def summarize_plot(col='p_val', pollutant_suffix='', method_suffix='', outcome_c
                 p_thres.append(float(p_splitted_by_sign[1]))
 
             # set_p_fdr = frozenset(p_wo_thres)
-            set_p_fdr = tuple(pollutant_profile)
+            set_p_fdr = tuple(p_wo_thres)
+            # set_p_fdr = tuple(pollutant_profile)
             if set_p_fdr in multi_pollutant_fdr:
                 multi_pollutant_fdr[set_p_fdr][idx] = pollutant_row[col]
                 multi_pollutant_coef[set_p_fdr][idx] = abs(pollutant_row['coef'])
@@ -354,63 +369,85 @@ def summarize_plot(col='p_val', pollutant_suffix='', method_suffix='', outcome_c
                 multi_pollutant_freq[set_p_fdr] = np.zeros(len(outcome_list))
                 multi_pollutant_freq[set_p_fdr][idx] = abs(pollutant_row['freq'])
 
-        if pollutant_row[col] < 0.05:
-            # if relation_to_outcome == 'mixed_sign_profile' or pollutant_row[col] > 0.05:
-            #     rel = 0.5
+
+
+            # if pollutant_row['coef'] > 0:
+            #     rel = 2.0
             # else:
-            #     rel = relation_dict[relation_to_outcome]
+            #     rel = 1.0
+            # if pollutant_row[col] > 0.05:
+            #     rel = 0.5
+
+            # rel = relation_dict[relation_to_outcome]
+            # if
+
+        if len(pollutant_profile) == 1:
+            set_p = pollutant_profile[0].split(sign_pair[1])[0].split(sign_pair[0])[0]
+            if pollutant_row[col] < 0.05:
+                # print(set_p)
+                if relation_to_outcome == 'mixed_sign_profile':
+                    rel = 0.5
+                else:
+                    rel = relation_dict[relation_to_outcome]
+                    # print(set_p)
+
+            if sign_pair[1] in pollutant_profile[0]:
+                p_splitted_by_sign = pollutant_profile[0].split(sign_pair[1])
+                p_wo_thres = p_splitted_by_sign[0] + sign_pair[1]
+            else:
+                p_splitted_by_sign = pollutant_profile[0].split(sign_pair[0])
+                p_wo_thres = p_splitted_by_sign[0] + sign_pair[0]
+            p_thres = float(p_splitted_by_sign[1])
+            # set_p = pollutant_profile[0]
+            if set_p in single_pollutantTimeWin:
+                single_pollutantTimeWin[set_p][idx] = rel
+            else:
+                single_pollutantTimeWin[set_p] = 0.5 * np.ones(len(outcome_list))
+                single_pollutantTimeWin[set_p][idx] = rel
+        else:
             if pollutant_row['coef'] > 0:
                 rel = 2.0
             else:
                 rel = 1.0
-
             if pollutant_row[col] > 0.05:
                 rel = 0.5
 
-            if len(pollutant_profile) == 1:
-                # set_p = pollutant_profile[0].split(sign_pair[1])[0].split(sign_pair[0])[0]
-
-                if sign_pair[1] in pollutant_profile[0]:
-                    p_splitted_by_sign = pollutant_profile[0].split(sign_pair[1])
-                    p_wo_thres = p_splitted_by_sign[0] + sign_pair[1]
+            p_wo_thres = []
+            # print(pollutant_profile)
+            for p in pollutant_profile:
+                if sign_pair[1] in p:
+                    p_splitted_by_sign = p.split(sign_pair[1])
+                    p_wo_thres.append(p_splitted_by_sign[0] + sign_pair[1])
                 else:
-                    p_splitted_by_sign = pollutant_profile[0].split(sign_pair[0])
-                    p_wo_thres = p_splitted_by_sign[0] + sign_pair[0]
-                p_thres = float(p_splitted_by_sign[1])
-                set_p = pollutant_profile[0]
-                if set_p in single_pollutantTimeWin:
-                    single_pollutantTimeWin[set_p][idx] = rel
-                else:
-                    single_pollutantTimeWin[set_p] = 0.5 * np.ones(len(outcome_list))
-                    single_pollutantTimeWin[set_p][idx] = rel
+                    p_splitted_by_sign = p.split(sign_pair[0])
+                    p_wo_thres.append(p_splitted_by_sign[0] + sign_pair[0])
+                p_thres.append(float(p_splitted_by_sign[1]))
+            p_wo_thres = tuple(p_wo_thres)
+            # for p in pollutant_profile:
+            #     if sign_pair[1] in p:
+            #         p_wo_thres.append(p.split(sign_pair[1])[0]+sign_pair[1])
+            #     else:
+            #         p_wo_thres.append(p.split(sign_pair[0])[0] + sign_pair[0])
+            set_p = tuple(p_wo_thres)
+            # set_p = frozenset(p_wo_thres)
+            # set_p = tuple(pollutant_profile)
+            if set_p in multi_pollutantTimeWin:
+                multi_pollutantTimeWin[set_p][idx] = rel
             else:
-                p_wo_thres = []
-                print(pollutant_profile)
-                for p in pollutant_profile:
-                    if sign_pair[1] in p:
-                        p_splitted_by_sign = p.split(sign_pair[1])
-                        p_wo_thres.append(p_splitted_by_sign[0] + sign_pair[1])
-                    else:
-                        p_splitted_by_sign = p.split(sign_pair[0])
-                        p_wo_thres.append(p_splitted_by_sign[0] + sign_pair[0])
-                    p_thres.append(float(p_splitted_by_sign[1]))
-                p_wo_thres = tuple(p_wo_thres)
-                # for p in pollutant_profile:
-                #     if sign_pair[1] in p:
-                #         p_wo_thres.append(p.split(sign_pair[1])[0]+sign_pair[1])
-                #     else:
-                #         p_wo_thres.append(p.split(sign_pair[0])[0] + sign_pair[0])
-                # set_p = frozenset(p_wo_thres)
-                set_p = tuple(pollutant_profile)
-                if set_p in multi_pollutantTimeWin:
-                    multi_pollutantTimeWin[set_p][idx] = rel
-                else:
-                    multi_pollutantTimeWin[set_p] = 0.5 * np.ones(len(outcome_list))
-                    multi_pollutantTimeWin[set_p][idx] = rel
-            list_profile_thres[p_wo_thres] = (p_thres, outcome_list[idx], pollutant_row['coef'])
+                multi_pollutantTimeWin[set_p] = 0.5 * np.ones(len(outcome_list))
+                multi_pollutantTimeWin[set_p][idx] = rel
+
+        # if p_wo_thres in list_profile_thres:
+        # TODO: update to be capable for same profiles and threshold
+        list_profile_thres[p_wo_thres] = (p_thres, outcome_list[idx], pollutant_row['coef'])
+                # list_profile_thres[p_wo_thres].append((p_thres, outcome_list[idx], pollutant_row['coef']))
+            # else:
+            #     list_profile_thres[p_wo_thres] = [(p_thres, outcome_list[idx], pollutant_row['coef'])]
 
     m_keys = multi_pollutantTimeWin.copy().keys()
+    # print(m_keys)
     s_keys = single_pollutantTimeWin.copy().keys()
+    # print(s_keys)
     #
     # set_of_pollutants = set(list(m_keys))
     # set_of_pollutants.update(s_keys)
@@ -534,24 +571,28 @@ def summarize_plot(col='p_val', pollutant_suffix='', method_suffix='', outcome_c
     merged_fdr_df = pd.concat([multi_fdr_df, single_fdr_df])
     merged_coef_df = pd.concat([multi_coef_df, single_coef_df])
     merged_freq_df = pd.concat([multi_freq_df, single_freq_df])
+
+    # merged_fdr_df = merged_fdr_df.str.cat(merged_freq_df.astype(str), sep='\nCount=')
     # print(fdr_df)
     # print(fdr_df.loc[:, 'max_count'])
     max_count = fdr_df.loc[:, 'max_count'].values[0]
-    merged_freq_df['max'] = merged_freq_df.max(axis=1).astype(int).astype(str)
-    # merged_freq_df.sort_values(by='max', ascending=False, inplace=True)
-
-    new_idx_name = merged_freq_df.index.str.cat(merged_freq_df[['max']],
-                                                sep='\n(Frequency = ')
-    new_idx_name = new_idx_name + ' out of {})'.format(max_count)
+    #
+    # merged_freq_df['max'] = merged_freq_df.max(axis=1).astype(int).astype(str)
+    # # merged_freq_df.sort_values(by='max', ascending=False, inplace=True)
+    #
+    # new_idx_name = merged_freq_df.index.str.cat(merged_freq_df[['max']],
+    #                                             sep='\n(Frequency = ')
+    # new_idx_name = new_idx_name + ' out of {})'.format(max_count)
 
     # merged_df = merged_df.loc[merged_freq_df.index]
-    merged_df.index = new_idx_name
-
-    # merged_coef_df = merged_coef_df.loc[merged_freq_df.index]
-    merged_coef_df.index = new_idx_name
-
-    # merged_fdr_df = merged_fdr_df.loc[merged_freq_df.index]
-    merged_fdr_df.index = new_idx_name
+    # merged_df.index = new_idx_name
+    #
+    # # merged_coef_df = merged_coef_df.loc[merged_freq_df.index]
+    # merged_coef_df.index = new_idx_name
+    #
+    # # merged_fdr_df = merged_fdr_df.loc[merged_freq_df.index]
+    # merged_fdr_df.index = new_idx_name
+    # merged_freq_df.index = new_idx_name
 
     # merged_df.rename(columns=outcome_col_rename, inplace=True)
 
@@ -569,7 +610,7 @@ def summarize_plot(col='p_val', pollutant_suffix='', method_suffix='', outcome_c
 
     # figure_height = matrix_height_in / (1 - top_margin - bottom_margin)
     # plt.clf()
-    def fig_gen():
+    def fig_gen(merged_temp_df):
         fig = plt.figure(figsize=(32, 40))
         ax = fig.add_subplot(111)
         qrates = np.array(relation_list)
@@ -577,57 +618,237 @@ def summarize_plot(col='p_val', pollutant_suffix='', method_suffix='', outcome_c
         norm = matplotlib.colors.BoundaryNorm(np_array, 3)
         fmt = matplotlib.ticker.FuncFormatter(lambda x, pos: qrates[::-1][norm(x)])
 
-        im, _ = heatmap(merged_df.values, merged_df.index, [c.replace('_', '\n') for c in merged_df.columns], ax=ax,
+        im, _ = heatmap(merged_temp_df.values, merged_temp_df.index, [c.replace('_', '\n') for c in merged_temp_df.columns], ax=ax,
                         cmap=matplotlib.colors.ListedColormap(['white', 'red', 'green']),
                         norm=norm,
                         cbar_kw=dict(ticks=np.arange(1, 3), format=fmt, ),
-                        cbarlabel="Coefficient of Profile to the Outcome")
+                        cbarlabel="Association of Profile to the Outcome")
         ax.tick_params(axis='x', labelsize=25)
         ax.tick_params(axis='y', labelsize=25)
 
         return fig, ax, im
 
     # output file
+    max_rows_in1 = 20
 
-    fig1, ax1, im1 = fig_gen()
-    fig2, ax2, im2 = fig_gen()
-    # fig1.suptitle('{} Significant Pollutant Profile ({} < 0.05)'.format(pollutant_suffix, col), fontsize=20, y=.95)
-    # fig2.suptitle('Coefficients of {} Significant Pollutant Profile'.format(pollutant_suffix), fontsize=20, y=.95)
-    print(merged_coef_df)
-    convert_str = {c: str for c in merged_df.columns}
-    merged_df = merged_df.astype(convert_str)
-    for k, v in relation_dict.items():
-        merged_df = merged_df.replace(str(v), k)
-    merged_df.replace('0.5', '>0.05', inplace=True)
-    yr_dir = pollutant_suffix.replace('+5', '_yr_5').replace('-5', '_yr_-5')
-    plot_dir = './plot_{}/nata_{}/histogram_profile_from_{}/'.format(method_suffix, yr_dir, pollutant_suffix)
-    # if 'birth' in pollutant_suffix:
-    #     plot_dir = plot_dir.format('birth')
-    # else:
-    #     plot_dir = plot_dir.format('diagnose')
+    number_profiles = merged_df.shape[0]
+    idx_range = np.append(np.arange(0, number_profiles, max_rows_in1), number_profiles)
+    number_of_outcomes_by_profile = (merged_df != 0.5).astype(int).sum(axis=1)
+    number_of_figures = np.ceil(float(number_profiles) / max_rows_in1).astype(int)
+
+    merged_df['num_outcomes'] = number_of_outcomes_by_profile
+    # print(number_of_outcomes_by_profile)
+
+    profile_str = merged_df.index.str
+    merged_df['all_greater'] = (profile_str.count('>') > 1) & (profile_str.count('<') == 0)
+    merged_df['all_less'] = (profile_str.count('<') > 1) & (profile_str.count('>') == 0)
+    # merged_df['multi_pollutants'] = False
+    merged_df['multi_pollutants'] = profile_str.count('\n') > 0
+    # merged_df['multi_pollutants'] = (profile_str.count('>') < 1) | (profile_str.count('<') < 1)
+    sorted_by_columns = ['all_greater', 'all_less','multi_pollutants', 'num_outcomes']
+    merged_df.sort_values(by=sorted_by_columns,
+                                             ascending=[False, False, False, False],
+                                             inplace=True)
+
+    merged_fdr_df = merged_fdr_df.loc[merged_df.index]
+    merged_coef_df = merged_coef_df.loc[merged_df.index]
+    merged_freq_df = merged_freq_df.loc[merged_df.index]
+
+    # merged_df.drop(columns=sorted_by_columns, inplace=True)
+    profile_str_sorted = merged_df.index.str
+    category_outcome = {'all_greater': merged_df['all_greater'],
+                        'all_less': merged_df['all_less'],
+                        'mixed_sign_multi_pollutants': (merged_df['multi_pollutants'] & ~merged_df['all_greater'] & ~merged_df['all_less']),
+                        'single_pollutant': ~merged_df['multi_pollutants']}
+    print(sum(~merged_df['multi_pollutants']))
+    merged_df.drop(columns=sorted_by_columns, inplace=True)
     if not os.path.exists(plot_dir):
         os.mkdir(plot_dir)
-    for idx_r, r in enumerate(merged_df.index):
-        for idx_c, c in enumerate(merged_df.columns):
-            if merged_fdr_df.loc[r, c] < 0.05:
-                plot_txt_fdr = '{:.3e}'.format(merged_fdr_df.loc[r, c])
-                plot_txt_coef = '{:.3f}'.format(merged_coef_df.loc[r, c])
-                im1.axes.text(idx_c, idx_r, plot_txt_fdr, ha="center", va="center", color="w", size=28,
-                              fontweight='bold')
-                im2.axes.text(idx_c, idx_r, plot_txt_coef, ha="center", va="center", color="w", size=28,
-                              fontweight='bold')
-        # if '\n' in r:
-        r_list = r.split('\n')
-        for sub_r in r_list:
-            sub_r = sub_r.replace(sign_pair[0], '').replace(sign_pair[1], '')
-            # plot_histogram(asthma_df=asthma_df, plot_dir=plot_dir, pollutant_name=sub_r+'birth+5')
+    # writer = pd.ExcelWriter('fdr_summary.xlsx', engine='xlsxwriter')
 
-    plt.autoscale()
-    fig1.savefig('heatmp_summary_nata_{}_{}_{}.pdf'.format(pollutant_suffix, col, method_suffix), bbox_inches="tight")
-    fig2.savefig('heatmp_summary_nata_{}_{}_{}.pdf'.format(pollutant_suffix, 'coef', method_suffix),
-                 bbox_inches="tight")
+    wb = Workbook()
 
-    merged_fdr_df.to_csv('summary_{}_{}.csv'.format(col, pollutant_suffix))
+
+    for profile_cat, profile_bool in category_outcome.items():
+        cat_dir = os.path.join(plot_dir, profile_cat)
+        if not os.path.exists(cat_dir):
+            os.mkdir(cat_dir)
+        merged_df_cat = merged_df[profile_bool]
+        merged_fdr_df_cat = merged_fdr_df[profile_bool]
+        merged_coef_df_cat = merged_coef_df[profile_bool]
+        merged_freq_df_cat = merged_freq_df[profile_bool]
+
+        number_profiles = merged_df_cat.shape[0]
+        idx_range = np.append(np.arange(0, number_profiles, max_rows_in1), number_profiles)
+        number_of_figures = np.ceil(float(number_profiles) / max_rows_in1).astype(int)
+
+        for fig_sub_idx in range(number_of_figures):
+            row_start_idx = idx_range[fig_sub_idx]
+            row_end_idx = idx_range[fig_sub_idx+1]
+            merged_df_sub = merged_df_cat.iloc[row_start_idx:row_end_idx].copy()
+            merged_fdr_df_sub = merged_fdr_df_cat.iloc[row_start_idx:row_end_idx].copy()
+            merged_coef_df_sub = merged_coef_df_cat.iloc[row_start_idx:row_end_idx].copy()
+            merged_freq_df_sub = merged_freq_df_cat.iloc[row_start_idx:row_end_idx].copy()
+            # print(merged_df_sub)
+
+            fig1, ax1, im1 = fig_gen(merged_temp_df=merged_df_sub)
+            fig2, ax2, im2 = fig_gen(merged_temp_df=merged_df_sub)
+            fig1.suptitle('{} Significant Pollutant Profile ({} < 0.05)'.format(pollutant_suffix, col), fontsize=20, y=.95)
+            fig2.suptitle('Coefficients of {} Significant Pollutant Profile'.format(pollutant_suffix), fontsize=20, y=.95)
+            # print(merged_coef_df)
+            # convert_str = {c: str for c in merged_df.columns}
+            # merged_df = merged_df.astype(convert_str)
+            # for k, v in relation_dict.items():
+            #     merged_df_sub = merged_df_sub.replace(str(v), k)
+            # merged_df_sub.replace('0.5', '>0.05', inplace=True)
+            # yr_dir = pollutant_suffix.replace('+5', '_yr_5').replace('-5', '_yr_-5')
+            # plot_dir = './plot/nata_{}/histogram_profile_from_{}/'.format(method_suffix, yr_dir, pollutant_suffix)
+            # if 'birth' in pollutant_suffix:
+            #     plot_dir = plot_dir.format('birth')
+            # else:
+            #     plot_dir = plot_dir.format('diagnose')
+
+
+
+            for idx_r, r in enumerate(merged_df_sub.index):
+                for idx_c, c in enumerate(merged_df_sub.columns):
+                    if merged_fdr_df_sub.loc[r, c] < 0.05:
+                        plot_txt_fdr = 'FDR={:.2e}\nCount={:d}'.format(merged_fdr_df_sub.loc[r, c], int(merged_freq_df_sub.loc[r, c]))
+                        plot_txt_coef = '{:.3f}\nCount={:d}'.format(merged_coef_df_sub.loc[r, c], int(merged_freq_df_sub.loc[r, c]))
+                        im1.axes.text(idx_c, idx_r, plot_txt_fdr, ha="center", va="center", color="w", size=28,
+                                      fontweight='bold')
+                        im2.axes.text(idx_c, idx_r, plot_txt_coef, ha="center", va="center", color="w", size=28,
+                                      fontweight='bold')
+                # if '\n' in r:
+                r_list = r.split('\n')
+                for sub_r in r_list:
+                    sub_r = sub_r.replace(sign_pair[0], '').replace(sign_pair[1], '')
+                    # plot_histogram(asthma_df=asthma_df, plot_dir=plot_dir, pollutant_name=sub_r+'birth+5')
+
+            plt.autoscale()
+            fig1.savefig(os.path.join(cat_dir,'heatmp_summary_nata_{}_{}_{}.pdf'.format(pollutant_suffix, col, fig_sub_idx)),
+                         bbox_inches="tight")
+            # fig2.savefig(os.path.join(cat_dir,'heatmp_summary_nata_{}_{}_{}.pdf'.format(pollutant_suffix, 'coef', fig_sub_idx)),
+            #              bbox_inches="tight")
+        ws_fdr = wb.create_sheet(profile_cat+'_fdr')
+        merged_fdr_df_cat_replaced = merged_fdr_df_cat.replace(1, np.nan)
+        for r in dataframe_to_rows(merged_fdr_df_cat_replaced, index=True, header=True):
+            ws_fdr.append(r)
+        merged_rel_df_cat_replaced = merged_df_cat.replace({2.0:'Positively Associated',
+                                                            1.0:'Negatively Associated',
+                                                            0.5:'NA'})
+        ws_asso = wb.create_sheet(profile_cat + '_association')
+        for r in dataframe_to_rows(merged_rel_df_cat_replaced, index=True, header=True):
+            ws_asso.append(r)
+
+        merged_freq_df_cat_replaced = merged_freq_df_cat.replace(0, np.nan)
+        ws_freq = wb.create_sheet(profile_cat + '_frequency')
+        for r in dataframe_to_rows(merged_freq_df_cat_replaced, index=True, header=True):
+            ws_freq.append(r)
+
+        # merged_fdr_df_cat.to_csv(os.path.join(cat_dir,'summary_{}_{}.csv'.format(col, pollutant_suffix)))
+
+    wb.save(os.path.join(plot_dir, "summary.xlsx"))
+    ############ new plot by outcome ###############
+    # max_rows = 10
+    # max_col_sub_fig = 3
+    # print(merged_df)
+    # for idx_c, c in enumerate(merged_df.columns):
+    #     # print(c)
+    #     merged_fdr_df_c = merged_fdr_df[str(c)]
+    #     print(merged_fdr_df_c)
+    #     merge_df_significant_idx = merged_fdr_df_c < 0.05
+    #
+    #     merged_fdr_df_c_significant = merged_fdr_df_c.loc[merge_df_significant_idx]
+    #     merged_df_c_significant = merged_df.loc[merge_df_significant_idx, [c]]
+    #
+    #     ### Sorted by FDR, all greater, Freq
+    #     merged_freq_df_c_significant = merged_freq_df.loc[merge_df_significant_idx, :]
+    #     # merged_freq_df_c_significant.sort_values(ascending=False, inplace=True)
+    #
+    #     # merged_freq_df_c_significant['freq'] = merged_freq_df_c_significant.max(axis=1).astype(int).astype(str)
+    #     # merged_freq_df.sort_values(by='max', ascending=False, inplace=True)
+    #     # print()
+    #     new_idx_name = merged_freq_df_c_significant.index.str.cat(merged_freq_df[[c]].astype(str),
+    #                                                 sep='\n(Frequency = ')
+    #     new_idx_name = new_idx_name + ' out of {})'.format(max_count)
+    #
+    #     merged_freq_df_c_significant.index = new_idx_name
+    #     merged_fdr_df_c_significant.index = new_idx_name
+    #     merged_df_c_significant.index = new_idx_name
+    #
+    #     profile_str = merged_freq_df_c_significant.index.str
+    #     merged_freq_df_c_significant['all_greater'] = False
+    #     # print(profile_str.count('>') > 1)
+    #     # print(profile_str.count('<') == 0)
+    #     merged_freq_df_c_significant['all_greater'] = (profile_str.count('>') > 1) & (profile_str.count('<') == 0)
+    #     merged_freq_df_c_significant['multi_pollutants'] = False
+    #     merged_freq_df_c_significant['multi_pollutants'] = profile_str.count('\n') > 1
+    #     merged_freq_df_c_significant.sort_values(by=['multi_pollutants','all_greater',  c],
+    #                                              ascending=[False, False, False],
+    #                                              inplace=True)
+    #
+    #     merged_fdr_df_c_significant = merged_fdr_df_c_significant.loc[merged_freq_df_c_significant.index]
+    #     merged_df_c_significant = merged_df_c_significant.loc[merged_freq_df_c_significant.index]
+    #
+    #
+    #     number_profiles_c = sum(merged_fdr_df_c < 0.05)
+    #     print(number_profiles_c, merged_df_c_significant.shape, merged_fdr_df_c_significant.shape)
+    #     # idx_range = np.linspace(0, number_profiles_c, num=max_rows, dtype=int)
+    #     idx_range = np.append(np.arange(0, number_profiles_c, max_rows), number_profiles_c)
+    #     num_sub_figs = len(idx_range)-1
+    #     row_sub_fig = np.ceil(num_sub_figs / max_col_sub_fig).astype(int)
+    #     col_sub_fig = min(max_col_sub_fig, num_sub_figs)
+    #     fig_outcome, ax_outcome = plt.subplots(row_sub_fig, max_col_sub_fig, figsize=(17*col_sub_fig, 13*row_sub_fig))
+    #     for idx_ra in range(num_sub_figs):
+    #         subfig_bool = np.zeros((merged_df_c_significant.shape[0])).astype(bool)
+    #         subfig_bool[idx_range[idx_ra]:idx_range[idx_ra+1]] = True
+    #         merged_df_subfig = merged_df_c_significant.iloc[idx_range[idx_ra]:idx_range[idx_ra+1]]
+    #         merged_df_fdr_subfig = merged_fdr_df_c_significant.iloc[idx_range[idx_ra]:idx_range[idx_ra+1]]
+    #         # print(merged_df_c_significant)
+    #         # print(merged_df_subfig)
+    #         subfig_r = idx_ra // max_col_sub_fig
+    #         subfig_c = idx_ra % max_col_sub_fig
+    #         print(subfig_c, subfig_r)
+    #         ax_subfig = ax_outcome[subfig_r, subfig_c]
+    #         qrates = np.array(relation_list)
+    #         np_array = [0.5 - 1e-4, 0.5 + 1e-4, 1.5, 2.5]
+    #         norm = matplotlib.colors.BoundaryNorm(np_array, 3)
+    #         fmt = matplotlib.ticker.FuncFormatter(lambda x, pos: qrates[::-1][norm(x)])
+    #
+    #         im_subfig, cbar_subfig = heatmap(np.expand_dims(merged_df_subfig.values,axis=1),
+    #                                merged_df_subfig.index,
+    #                         # [c.replace('_', '\n') for _col in merged_df_subfig.columns],
+    #                         [''],
+    #                         ax=ax_subfig,
+    #                         cmap=matplotlib.colors.ListedColormap(['white', 'red', 'green']),
+    #                         norm=norm,
+    #                         cbar_kw=dict(ticks=np.arange(1, 3), format=fmt),
+    #                         cbarlabel="Coefficient of Profile to the Outcome")
+    #         # ax_subfig.tick_params(axis='x', labelsize=25)
+    #         # ax_subfig.tick_params(axis='y', labelsize=25)
+    #         if (idx_ra != (num_sub_figs-1)) and (subfig_c != (max_col_sub_fig-1)):
+    #             cbar_subfig.remove()
+    #
+    #         for idx_r, r in enumerate(merged_df_fdr_subfig.index):
+    #             # for idx_c, c in enumerate(merged_df_fdr_subfig.columns):
+    #             # if merged_fdr_df.loc[r] < 0.05:
+    #             plot_txt_fdr = '{:.3e}'.format(merged_df_fdr_subfig.loc[r])
+    #             # plot_txt_coef = '{:.3f}'.format(merged_coef_df.loc[r, c])
+    #             im_subfig.axes.text(0, idx_r, plot_txt_fdr, ha="center", va="center", color="w", size=18,
+    #                           fontweight='bold')
+    #                     # im2.axes.text(idx_c, idx_r, plot_txt_coef, ha="center", va="center", color="w", size=28,
+    #                     #               fontweight='bold')
+    #     empty_subfig = range(num_sub_figs, row_sub_fig*max_col_sub_fig)
+    #     for i in empty_subfig:
+    #         fig_outcome.delaxes(ax_outcome.flatten()[i])
+    #     # fig_outcome.subplots_adjust()
+    #     fig_outcome.suptitle('{} Significant Pollutant Profile of {} ({} < 0.05)'.format(pollutant_suffix, c, col), fontsize=25, y=0.94)
+    #     fig_outcome.tight_layout(pad=5.0)
+    #     fig_outcome.savefig("./plot/{}/summary_fig_{}_{}_{}.pdf".format(method_suffix, c, pollutant_suffix, col),bbox_inches="tight")
+
+
+
 
     return list_profile_thres
 
@@ -636,10 +857,15 @@ def summarize_plot(col='p_val', pollutant_suffix='', method_suffix='', outcome_c
 #
 # def search_outcomes_by_pollutant(df, pollutant_set, )
 
-method_suffix_list = ['bt_xgb_multiple_counts',
-                      'nbt_xgb_multiple_counts',
-                      'bt_xgb_single_count',
-                      'nbt_xgb_single_count']
+# method_suffix_list = ['bt_xgb_multiple_counts',
+#                       'nbt_xgb_multiple_counts',
+#                       'bt_xgb_single_count',
+#                       'nbt_xgb_single_count']
+
+method_suffix_list = ['bt_multiple',
+                      'nbt_multiple',
+                      'bt_single',
+                      'nbt_single']
 
 sig_list = ['fdr']
 suffix_list = ['birth+5']
@@ -663,7 +889,7 @@ print(intersect_pollutant_list)
 
 intersect_pollutant_dictionary = {}
 profile_output_str = 'data/{}_{}_profile_label.csv'
-asthma_id_df = pd.read_csv('asthma_subject_ID.csv', )
+asthma_id_df = pd.read_csv('asthma_subject_ID.csv')
 asthma_id_df['Study ID'] = asthma_id_df['Study ID'].astype(str)
 
 for outcome in outcome_list:
@@ -708,10 +934,10 @@ for outcome in outcome_list:
                         current_bool = inequality_operators[sign_notation](orig_df[sp.replace(sign_notation, '')],
                                                                            v[0][idx])
                         bool_profile = bool_profile & current_bool
-            # method_thres_df[profile_str] = int(bool_profile)
-            profile_str = profile_str.replace('[', '(')
-            profile_str = profile_str.replace(']', ')')
-            method_thres_df[profile_str] = bool_profile.astype(int)
+                # method_thres_df[profile_str] = int(bool_profile)
+                profile_str = profile_str.replace('[', '(')
+                profile_str = profile_str.replace(']', ')')
+                method_thres_df[profile_str] = bool_profile.astype(int)
         method_thres_df.to_csv(profile_output_str.format(method_suffix_list[m_idx], outcome), index=False)
 
     for i in intersect_pollutant_list:
