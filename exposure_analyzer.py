@@ -903,9 +903,7 @@ def runWorkflow(**kargs):
                     random.Random(8964).shuffle(path_from)
                     p_name = '_and_'.join(p.split('\t'))
 
-                    tree_dir = os.path.join(outcome_dir, p_name)
-                    if not os.path.exists(tree_dir):
-                        os.mkdir(tree_dir)
+
 
                     for path_loc in path_from[:5]:
                         split_idx, booster_idx = path_loc
@@ -925,6 +923,10 @@ def runWorkflow(**kargs):
                         tree_sub_dir = os.path.join(outcome_dir, profile_group)
                         if not os.path.exists(tree_sub_dir):
                             os.mkdir(tree_sub_dir)
+
+                        tree_dir = os.path.join(tree_sub_dir, p_name)
+                        if not os.path.exists(tree_dir):
+                            os.mkdir(tree_dir)
 
                         graph = visualize_xgb(visualize_dict['model_list'][split_idx], feature_names=fmap_fn, labels=labels,
                                               outcome_name=tree_sub_dir,
