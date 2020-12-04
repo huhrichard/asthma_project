@@ -669,21 +669,21 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\t"):
     # for k, (path, count) in enumerate(sorted_paths):
         greater_ = True
         profile_str = ""
-        # if count > 10:
-        for idx, pollutant in enumerate(path.split(sep)):
-            # print()
-            profile_str += "{}{}{:.3e}{}".format(sep,pollutant, paths_thres[path][idx], sep)
-        # plot_histogram(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
-        # plot_scatter(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
-        # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
+        if count > 10:
+            for idx, pollutant in enumerate(path.split(sep)):
+                # print()
+                profile_str += "{}{}{:.3e}{}".format(sep,pollutant, paths_thres[path][idx], sep)
+            # plot_histogram(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
+            # plot_scatter(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
+            # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
 
-        print_str = "{}th paths ({}):{}".format(k, count, profile_str[:-1])
-        topk_profile_with_value_str.append(profile_str[1:-1])
-        if k < topk:
-            print(print_str)
-        if profile_str.count('>') > 1 and count > 1 and (not '<' in profile_str):
-            # print(print_str)
-            all_greater_path[profile_str] = count
+            print_str = "{}th paths ({}):{}".format(k, count, profile_str[:-1])
+            topk_profile_with_value_str.append(profile_str[1:-1])
+            if k < topk:
+                print(print_str)
+            if profile_str.count('>') > 1 and count > 1 and (not '<' in profile_str):
+                # print(print_str)
+                all_greater_path[profile_str] = count
 
 
         # else:
@@ -828,8 +828,9 @@ def runWorkflow(**kargs):
         for idx, (profile, profile_occurrence) in enumerate(sorted_paths):
             # print(y)
             print(profile_counter)
-            if profile_counter > (len(sorted_paths)*0.1):
-                break
+            # if profile_counter > (len(sorted_paths)*0.1):
+            #     break
+            # if profile_occurrence < 10:
             binary_profile = profile_indicator_function(path=profile,
                                                         feature_idx=feature_idx_dict,
                                                         path_threshold=paths_median_threshold[profile],
@@ -911,8 +912,22 @@ def runWorkflow(**kargs):
                     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,
                                                                         random_state=split_idx,
                                                                         stratify=y)
+                    profile_group = ''
+                    profile_str = topk_profile_str[idx]
+                    if (profile_str.count('>') > 1) & (profile_str.count('<') == 0) & profile_str.count('\n') > 0:
+                        profile_group = 'all_greater'
+                    elif (profile_str.count('<') > 1) & (profile_str.count('>') == 0) & profile_str.count('\n') > 0:
+                        profile_group = 'all_less'
+                    elif profile_str.count('\n') > 0:
+                        profile_group = 'mixed_sign_multi_pollutants'
+                    elif profile_str.count('\n') == 0:
+                        profile_group = 'single_pollutant'
+                    tree_sub_dir = os.path.join(outcome_dir, profile_group)
+                    if not os.path.exists(tree_sub_dir):
+                        os.mkdir(tree_sub_dir)
+
                     graph = visualize_xgb(visualize_dict['model_list'][split_idx], feature_names=fmap_fn, labels=labels,
-                                          outcome_name=outcome_dir,
+                                          outcome_name=tree_sub_dir,
                                           num_trees=booster_idx,
                                           file_name="split_{}_booster_{}".format(split_idx, booster_idx),
                                           training_data=(X_train, y_train),
