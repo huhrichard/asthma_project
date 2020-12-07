@@ -905,7 +905,7 @@ def runWorkflow(**kargs):
 
 
 
-                    for path_loc in path_from[:5]:
+                    for path_loc in path_from[:10]:
                         split_idx, booster_idx = path_loc
                         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,
                                                                             random_state=split_idx,
@@ -1123,8 +1123,8 @@ if __name__ == "__main__":
     binary_out = outcome_binary_dict[outcome]
 
     m_Dir = os.path.join(os.getcwd(), 'plot/{}/'.format(suffix))
-    if not os.path.exists(m_Dir):
-        os.mkdir(m_Dir)
+    # if not os.path.exists(m_Dir):
+    #     os.mkdir(m_Dir)
     plotDir = os.path.join(m_Dir, 'nata_{}_{}'.format(yr_name, yr_f))
     if not os.path.exists(plotDir):
         os.mkdir(plotDir)
