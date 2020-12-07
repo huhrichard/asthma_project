@@ -1126,8 +1126,8 @@ if __name__ == "__main__":
     if not os.path.exists(m_Dir):
         os.mkdir(m_Dir)
     # plotDir = os.path.join(m_Dir, 'nata_{}_{}'.format(yr_name, yr_f))
-    if not os.path.exists(plotDir):
-        os.mkdir(plotDir)
+    # if not os.path.exists(plotDir):
+    #     os.mkdir(plotDir)
     pvalue_df = pd.DataFrame(columns=['profile', 'outcome', 'p_val', 'relation',
                                       'coef', 'coef_95CI_lower', 'coef_95CI_upper','freq', 'pos_count', 'neg_count', 'binary_outcome',
                                       'max_count'
