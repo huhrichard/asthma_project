@@ -913,9 +913,9 @@ def runWorkflow(**kargs):
                         profile_group = ''
                         profile_str = topk_profile_str[idx]
                         print(profile_str)
-                        if (profile_str.count('>') > 1) & (profile_str.count('<') == 0) & profile_str.count('\t') > 0:
+                        if (profile_str.count('>') > 1) & (profile_str.count('<') == 0) & (profile_str.count('\t') > 0):
                             profile_group = 'all_greater'
-                        elif (profile_str.count('<') > 1) & (profile_str.count('>') == 0) & profile_str.count('\t') > 0:
+                        elif (profile_str.count('<') > 1) & (profile_str.count('>') == 0) & (profile_str.count('\t') > 0):
                             profile_group = 'all_less'
                         elif profile_str.count('\t') > 0:
                             profile_group = 'mixed_sign_multi_pollutants'
