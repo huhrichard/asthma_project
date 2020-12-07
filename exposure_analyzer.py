@@ -895,7 +895,7 @@ def runWorkflow(**kargs):
                 # effect_size_CI = np.exp(conf.values[0])
 
                 if p_val < 0.05:
-                    print('printing XGB Trees')
+
                     p, count = (profile, profile_occurrence)
                     # if count >= 5:
                     path_from = visualize_dict['paths_from'][p]
@@ -905,6 +905,7 @@ def runWorkflow(**kargs):
 
 
                     for path_loc in path_from[:10]:
+                        print('printing XGB Trees')
                         split_idx, booster_idx = path_loc
                         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,
                                                                             random_state=split_idx,
