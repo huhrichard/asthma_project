@@ -744,10 +744,10 @@ def runWorkflow(**kargs):
     # result_dir = os.path.join(plotDir, file_prefix)
     # if not os.path.exists(result_dir):
     #     os.mkdir(result_dir)
-    # for possible_result in possible_results:
-    #     possibleDirs.append(os.path.join(outputDir, possible_result))
-    #     if not os.path.exists(possibleDirs[-1]):
-    #         os.mkdir(possibleDirs[-1])
+    for possible_result in possible_results:
+        possibleDirs.append(os.path.join(outputDir, possible_result))
+        if not os.path.exists(possibleDirs[-1]):
+            os.mkdir(possibleDirs[-1])
     # 1. define input dataset
     if verbose: print("(runWorkflow) 1. Specifying input data ...")
     ######################################################
