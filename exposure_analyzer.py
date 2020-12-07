@@ -929,7 +929,7 @@ def runWorkflow(**kargs):
                             os.mkdir(tree_dir)
 
                         graph = visualize_xgb(visualize_dict['model_list'][split_idx], feature_names=fmap_fn, labels=labels,
-                                              outcome_name=tree_sub_dir,
+                                              outcome_name=outcome_dir,
                                               num_trees=booster_idx,
                                               file_name="split_{}_booster_{}".format(split_idx, booster_idx),
                                               training_data=(X_train, y_train),
