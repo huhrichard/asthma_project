@@ -895,8 +895,7 @@ def runWorkflow(**kargs):
                 # effect_size_CI = np.exp(conf.values[0])
 
                 if p_val < 0.05:
-
-
+                    print('printing XGB Trees')
                     p, count = (profile, profile_occurrence)
                     # if count >= 5:
                     path_from = visualize_dict['paths_from'][p]
@@ -920,7 +919,7 @@ def runWorkflow(**kargs):
                             profile_group = 'mixed_sign_multi_pollutants'
                         elif profile_str.count('\n') == 0:
                             profile_group = 'single_pollutant'
-                        tree_sub_dir = os.path.join(outcome_dir, profile_group)
+                        tree_sub_dir = os.path.join(outputDir, profile_group)
                         if not os.path.exists(tree_sub_dir):
                             os.mkdir(tree_sub_dir)
 
