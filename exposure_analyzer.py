@@ -912,6 +912,7 @@ def runWorkflow(**kargs):
                                                                             stratify=y)
                         profile_group = ''
                         profile_str = topk_profile_str[idx]
+                        print(profile_str)
                         if (profile_str.count('>') > 1) & (profile_str.count('<') == 0) & profile_str.count('\n') > 0:
                             profile_group = 'all_greater'
                         elif (profile_str.count('<') > 1) & (profile_str.count('>') == 0) & profile_str.count('\n') > 0:
@@ -921,10 +922,12 @@ def runWorkflow(**kargs):
                         elif profile_str.count('\n') == 0:
                             profile_group = 'single_pollutant'
                         tree_sub_dir = os.path.join(outputDir, profile_group)
+                        print(tree_sub_dir)
                         if not os.path.exists(tree_sub_dir):
                             os.mkdir(tree_sub_dir)
 
                         tree_dir = os.path.join(tree_sub_dir, p_name)
+                        print(p_name)
                         if not os.path.exists(tree_dir):
                             os.mkdir(tree_dir)
 
