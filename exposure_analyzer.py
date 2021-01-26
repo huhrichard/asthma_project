@@ -946,7 +946,9 @@ def runWorkflow(**kargs):
                         profile_group = 'single_pollutant'
 
                     # if (profile_group == 'all_greater') or (profile_group == 'single_pollutant'):
-                    if table_draw_tree_df.loc[table_draw_tree_df['profile'] == topk_profile_str[idx], 'table']:
+                    profile_condition = table_draw_tree_df[(table_draw_tree_df['profile'] == topk_profile_str[idx]) & (table_draw_tree_df['outcome']==outcome_folder_name),
+                                                           'table']
+                    if profile_condition.iloc[0]:
                         for path_loc in path_from:
                             # print('printing XGB Trees')
                             split_idx, booster_idx = path_loc
