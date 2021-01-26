@@ -691,6 +691,32 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\t"):
     return topk_profile_with_value_str, all_greater_path
     # print("> Top {} paths (overall):\n{}\n".format(topk, sorted_paths[:topk]))
 
+def draw_xgb_tree(test_size, split_idx, tree_dir,
+                  visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, count):
+    from utils_tree import visualize, visualize_xgb
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,
+                                                        random_state=split_idx,
+                                                        stratify=y)
+
+    # tree_sub_dir = os.path.join(outputDir, profile_group)
+    # print(tree_sub_dir)
+    # if not os.path.exists(tree_sub_dir):
+    #     os.mkdir(tree_sub_dir)
+
+    # tree_dir = os.path.join(tree_sub_dir, p_name)
+    # print(p_name)
+    # if not os.path.exists(tree_dir):
+    #     os.mkdir(tree_dir)
+
+    graph = visualize_xgb(visualize_dict['model_list'][split_idx], feature_names=fmap_fn,
+                          labels=labels,
+                          outcome_name=outcome_dir,
+                          num_trees=booster_idx,
+                          file_name="count_{}_split_{}_booster_{}".format(count, split_idx, booster_idx),
+                          training_data=(X_train, y_train),
+                          tree_dir=tree_dir)
+
 
 
 
@@ -825,6 +851,8 @@ def runWorkflow(**kargs):
         np.random.seed(0)
         print(len(topk_profile_str))
         profile_counter = 0
+        tree_counts = {}
+        table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
         for idx, (profile, profile_occurrence) in enumerate(sorted_paths):
             # print(y)
             print(profile_counter)
@@ -903,41 +931,30 @@ def runWorkflow(**kargs):
                     p_name = '_and_'.join(p.split('\t'))
 
 
+                    # TODO:change to plot tree_with as much profiles (single and all_greater?)
+                    profile_group = ''
+                    profile_str = topk_profile_str[idx]
+                    print(profile_str)
+                    if (profile_str.count('>') > 1) & (profile_str.count('<') == 0) & (profile_str.count('\t') > 0):
+                        profile_group = 'all_greater'
+                    elif (profile_str.count('<') > 1) & (profile_str.count('>') == 0) & (
+                            profile_str.count('\t') > 0):
+                        profile_group = 'all_less'
+                    elif profile_str.count('\t') > 0:
+                        profile_group = 'mixed_sign_multi_pollutants'
+                    elif profile_str.count('\t') == 0:
+                        profile_group = 'single_pollutant'
 
-                    for path_loc in path_from[:10]:
-                        print('printing XGB Trees')
-                        split_idx, booster_idx = path_loc
-                        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,
-                                                                            random_state=split_idx,
-                                                                            stratify=y)
-                        profile_group = ''
-                        profile_str = topk_profile_str[idx]
-                        print(profile_str)
-                        if (profile_str.count('>') > 1) & (profile_str.count('<') == 0) & (profile_str.count('\t') > 0):
-                            profile_group = 'all_greater'
-                        elif (profile_str.count('<') > 1) & (profile_str.count('>') == 0) & (profile_str.count('\t') > 0):
-                            profile_group = 'all_less'
-                        elif profile_str.count('\t') > 0:
-                            profile_group = 'mixed_sign_multi_pollutants'
-                        elif profile_str.count('\t') == 0:
-                            profile_group = 'single_pollutant'
-                        tree_sub_dir = os.path.join(outputDir, profile_group)
-                        print(tree_sub_dir)
-                        if not os.path.exists(tree_sub_dir):
-                            os.mkdir(tree_sub_dir)
-
-                        tree_dir = os.path.join(tree_sub_dir, p_name)
-                        print(p_name)
-                        if not os.path.exists(tree_dir):
-                            os.mkdir(tree_dir)
-
-                        graph = visualize_xgb(visualize_dict['model_list'][split_idx], feature_names=fmap_fn, labels=labels,
-                                              outcome_name=outcome_dir,
-                                              num_trees=booster_idx,
-                                              file_name="split_{}_booster_{}".format(split_idx, booster_idx),
-                                              training_data=(X_train, y_train),
-                                              tree_dir=tree_dir)
-
+                    # if (profile_group == 'all_greater') or (profile_group == 'single_pollutant'):
+                    if table_draw_tree_df.loc[table_draw_tree_df['profile'] == topk_profile_str[idx], 'table']:
+                        for path_loc in path_from:
+                            # print('printing XGB Trees')
+                            split_idx, booster_idx = path_loc
+                            if not (split_idx, booster_idx) in tree_counts:
+                                tree_counts[(split_idx, booster_idx)] = 1
+                            else:
+                                old_count = tree_counts[(split_idx, booster_idx)]
+                                tree_counts[(split_idx, booster_idx)] = old_count + 1
 
                 if (sign_pair[0] in topk_profile_str[idx] and sign_pair[1] in topk_profile_str[idx]) or profile_coef == 0:
                     relation_dir = possibleDirs[-1]
@@ -957,13 +974,6 @@ def runWorkflow(**kargs):
                                                                                             profile_coef,
                                                                                          p_val))
 
-
-
-                # print(out_path)
-                # result_summary.as_csv(out_path)
-
-                # profile_coef
-                #
 
                 if not os.path.exists(result_dir):
                     os.mkdir(result_dir)
@@ -996,38 +1006,16 @@ def runWorkflow(**kargs):
                                     # cols[9]: np.mean(np.array(scores)),
                                     # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
                                     }, ignore_index=True)
-                    # print(p_val_df)
-                #     for single_pollutant_profile in topk_profile_str[idx].split('\t'):
-                #         if sign_pair[0] in single_pollutant_profile:
-                #             pollutant_name, thres = single_pollutant_profile.split(sign_pair[0])
-                #         elif sign_pair[1] in single_pollutant_profile:
-                #             pollutant_name, thres = single_pollutant_profile.split(sign_pair[1])
-                #         if binary_outcome:
-                #             label_for_hist = ['{}(Yes)'.format(outcome_folder_name),
-                #                               '{}(No)'.format(outcome_folder_name)]
-                #             plot_histogram(whole_df, result_dir, pollutant_name=pollutant_name,
-                #                            label_plot=label_for_hist)
-                #         else:
-                #             plot_scatter(whole_df, result_dir, pollutant_name=pollutant_name, ylabel=outcome)
-                #             plot_hist2d(whole_df, result_dir, pollutant_name=pollutant_name, ylabel=outcome)
-                #     if p_val < 0.05:
-                #         f = open(out_path, 'w')
-                #         for table in result_summary.tables:
-                #             #     print(type(table))
-                #             html = table.as_html()
-                #             df_temp_result = pd.read_html(html, header=0, index_col=0)[0]
-                #             pd.options.display.float_format = '{:,.3e}'.format
-                #             if 'P>|z|' in df_temp_result.columns:
-                #                 # print(type(result.pvalues), type(df_temp_result.loc[:,'P>|z|']))
-                #                 # print(result.pvalues, df_temp_result.loc[:, 'P>|z|'])
-                #                 df_temp_result.loc[:, 'P>|z|'] = result.pvalues.values
-                #                 # print(result.pvalues, df_temp_result.loc[:,'P>|z|'])
-                #             csv_buffer = StringIO()
-                #             # output_file = df_temp_result.to_csv(csv_buffer, float_format='%.3e') + '\n'
-                #             df_temp_result.to_csv(csv_buffer, float_format='%.3e')
-                #             # print(csv_buffer.getvalue())
-                #             f.write(csv_buffer.getvalue() + '\n')
-                #         f.close()
+    max_count = max([v for k, v in tree_counts.items()])
+    tree_dir = outputDir
+    if max_count > 1:
+        for k, v in tree_counts.items():
+            if v == max_count:
+                split_idx, booster_idx = k
+                draw_xgb_tree(test_size, split_idx, tree_dir,
+                  visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, count=v)
+
+
 
     print('Finished All regressions!')
 
