@@ -692,7 +692,7 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\t"):
     # print("> Top {} paths (overall):\n{}\n".format(topk, sorted_paths[:topk]))
 
 def draw_xgb_tree(test_size, split_idx, tree_dir,
-                  visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, count):
+                  visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, count, X, y):
     from utils_tree import visualize, visualize_xgb
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size,
@@ -849,7 +849,7 @@ def runWorkflow(**kargs):
         """
 
         np.random.seed(0)
-        print(len(topk_profile_str))
+        # print(len(topk_profile_str))
         profile_counter = 0
         tree_counts = {}
         table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
@@ -934,7 +934,7 @@ def runWorkflow(**kargs):
                     # TODO:change to plot tree_with as much profiles (single and all_greater?)
                     profile_group = ''
                     profile_str = topk_profile_str[idx]
-                    print(profile_str)
+                    # print(profile_str)
                     if (profile_str.count('>') > 1) & (profile_str.count('<') == 0) & (profile_str.count('\t') > 0):
                         profile_group = 'all_greater'
                     elif (profile_str.count('<') > 1) & (profile_str.count('>') == 0) & (
@@ -1017,7 +1017,8 @@ def runWorkflow(**kargs):
             if v == max_count:
                 split_idx, booster_idx = k
                 draw_xgb_tree(test_size, split_idx, tree_dir,
-                  visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, count=v)
+                  visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y, count=v)
+
 
 
 
