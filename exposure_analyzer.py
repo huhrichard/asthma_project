@@ -1020,7 +1020,7 @@ def runWorkflow(**kargs):
                   visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y, count=v)
 
 
-
+    print('Number of trees included in the table:', len(tree_counts))
 
     print('Finished All regressions!')
 
