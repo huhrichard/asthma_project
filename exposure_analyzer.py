@@ -853,6 +853,7 @@ def runWorkflow(**kargs):
         profile_counter = 0
         tree_counts = {}
         table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
+        outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
         for idx, (profile, profile_occurrence) in enumerate(sorted_paths):
             # print(y)
             print(profile_counter)
@@ -947,18 +948,18 @@ def runWorkflow(**kargs):
 
                     # if (profile_group == 'all_greater') or (profile_group == 'single_pollutant'):
                     profile_table_bool = (table_draw_tree_df['profile'] == topk_profile_str[idx])
-                    outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
+
                     profile_condition = table_draw_tree_df.loc[profile_table_bool & outcome_table_bool,
                                                            'table']
                     if profile_condition.any():
-                        for path_loc in path_from:
+                        for path_idx, path_loc in enumerate(path_from):
                             # print('printing XGB Trees')
                             split_idx, booster_idx = path_loc
                             if not (split_idx, booster_idx) in tree_counts:
-                                tree_counts[(split_idx, booster_idx)] = 1
+                                tree_counts[(split_idx, booster_idx)] = (1, [path_idx])
                             else:
-                                old_count = tree_counts[(split_idx, booster_idx)]
-                                tree_counts[(split_idx, booster_idx)] = old_count + 1
+                                old_count, path_array = tree_counts[(split_idx, booster_idx)]
+                                tree_counts[(split_idx, booster_idx)] = (old_count + 1, path_array.append(path_idx))
 
                 if (sign_pair[0] in topk_profile_str[idx] and sign_pair[1] in topk_profile_str[idx]) or profile_coef == 0:
                     relation_dir = possibleDirs[-1]
@@ -1010,17 +1011,32 @@ def runWorkflow(**kargs):
                                     # cols[9]: np.mean(np.array(scores)),
                                     # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
                                     }, ignore_index=True)
-    max_count = max([v for k, v in tree_counts.items()])
+    max_count = max([v[0] for k, v in tree_counts.items()])
+    path_double_counted = []
+    total_path_in_table = sum(table_draw_tree_df[outcome_table_bool, 'table'])
+    path_double_counted_bucket = np.zeros(total_path_in_table)
+    # path_double_counted
     tree_dir = outputDir
-    if max_count > 1:
-        for k, v in tree_counts.items():
-            if v == max_count:
-                split_idx, booster_idx = k
-                draw_xgb_tree(test_size, split_idx, tree_dir,
-                  visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y, count=v)
+    # if max_count > 1:
+    for k, v in tree_counts.items():
+        if v[0] == max_count:
+            # path_indices = v[1]
+            if v[0] > 1:
+                path_double_counted = path_double_counted + [tuple(sorted(v[1]))]
+            split_idx, booster_idx = k
+            draw_xgb_tree(test_size, split_idx, tree_dir,
+                          visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y, count=v[0])
+    path_double_counted_set = set(path_double_counted)
+
+    for i in list(path_double_counted_set):
+        for j in i:
+            old_value = path_double_counted_bucket[j]
+            path_double_counted_bucket[j] = old_value + 1
 
 
-    print('Number of trees included in the table:', len(tree_counts))
+
+
+    print('Least number of trees included in the table:', total_path_in_table - sum(path_double_counted_bucket > 1))
 
     print('Finished All regressions!')
 
