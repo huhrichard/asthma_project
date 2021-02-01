@@ -1017,6 +1017,7 @@ def runWorkflow(**kargs):
     path_double_counted = []
     total_path_in_table = sum(table_draw_tree_df.loc[outcome_table_bool, 'table'])
     path_double_counted_bucket = np.zeros(outcome_table_bool.shape[0])
+    print(path_double_counted_bucket.shape)
     # path_double_counted
     tree_dir = outputDir
     # if max_count > 1:
@@ -1035,12 +1036,13 @@ def runWorkflow(**kargs):
     for i in list(path_double_counted_set):
         for j in i:
             old_value = path_double_counted_bucket[j]
+            print(j, old_value)
             path_double_counted_bucket[j] = old_value + 1
 
 
 
 
-    print('Least number of trees included in the table:', sum(path_double_counted_bucket > 1))
+    print('Least number of trees included in the table:', sum((path_double_counted_bucket > 1)))
 
     print('Finished All regressions!')
 
