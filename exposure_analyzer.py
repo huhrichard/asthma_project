@@ -1032,12 +1032,12 @@ def runWorkflow(**kargs):
             draw_xgb_tree(test_size, split_idx, tree_dir,
                           visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y, count=v[0])
     path_double_counted_set = set(path_double_counted)
-
+    print(path_double_counted_set)
     for i in list(path_double_counted_set):
         for j in i:
             old_value = path_double_counted_bucket[j]
-            print(j, old_value)
-            path_double_counted_bucket[j] = old_value + 1
+            # print(j, old_value)
+            path_douqqble_counted_bucket[j] = old_value + 1
 
     number_of_double_counted = path_double_counted_bucket > 1
     print(number_of_double_counted)
