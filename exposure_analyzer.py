@@ -959,8 +959,9 @@ def runWorkflow(**kargs):
                                 tree_counts[(split_idx, booster_idx)] = (1, [path_idx])
                             else:
                                 old_count, path_array = tree_counts[(split_idx, booster_idx)]
+                                path_array.append(path_idx)
                                 print(path_array)
-                                tree_counts[(split_idx, booster_idx)] = (old_count + 1, path_array.append(path_idx))
+                                tree_counts[(split_idx, booster_idx)] = (old_count + 1, path_array)
 
                 if (sign_pair[0] in topk_profile_str[idx] and sign_pair[1] in topk_profile_str[idx]) or profile_coef == 0:
                     relation_dir = possibleDirs[-1]
