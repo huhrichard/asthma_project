@@ -1022,6 +1022,7 @@ def runWorkflow(**kargs):
         if v[0] == max_count:
             # path_indices = v[1]
             if v[0] > 1:
+                print(v[1])
                 path_double_counted = path_double_counted + [tuple(sorted(v[1]))]
             split_idx, booster_idx = k
             draw_xgb_tree(test_size, split_idx, tree_dir,
