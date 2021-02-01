@@ -1013,7 +1013,7 @@ def runWorkflow(**kargs):
                                     }, ignore_index=True)
     max_count = max([v[0] for k, v in tree_counts.items()])
     path_double_counted = []
-    total_path_in_table = sum(table_draw_tree_df[outcome_table_bool, 'table'])
+    total_path_in_table = sum(table_draw_tree_df.loc[outcome_table_bool, 'table'])
     path_double_counted_bucket = np.zeros(total_path_in_table)
     # path_double_counted
     tree_dir = outputDir
