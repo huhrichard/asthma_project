@@ -856,7 +856,7 @@ def runWorkflow(**kargs):
         outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
         for idx, (profile, profile_occurrence) in enumerate(sorted_paths):
             # print(y)
-            print(profile_counter)
+            # print(profile_counter)
             # if profile_counter > (len(sorted_paths)*0.1):
             #     break
             if profile_occurrence > 10:
@@ -959,6 +959,7 @@ def runWorkflow(**kargs):
                                 tree_counts[(split_idx, booster_idx)] = (1, [path_idx])
                             else:
                                 old_count, path_array = tree_counts[(split_idx, booster_idx)]
+                                print(path_array)
                                 tree_counts[(split_idx, booster_idx)] = (old_count + 1, path_array.append(path_idx))
 
                 if (sign_pair[0] in topk_profile_str[idx] and sign_pair[1] in topk_profile_str[idx]) or profile_coef == 0:
