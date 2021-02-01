@@ -1040,7 +1040,7 @@ def runWorkflow(**kargs):
 
 
 
-    print('Least number of trees included in the table:', total_path_in_table - sum(path_double_counted_bucket > 1))
+    print('Least number of trees included in the table:', sum(path_double_counted_bucket > 1))
 
     print('Finished All regressions!')
 
