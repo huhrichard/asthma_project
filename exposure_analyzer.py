@@ -1015,15 +1015,16 @@ def runWorkflow(**kargs):
     max_count = max([v[0] for k, v in tree_counts.items()])
     path_double_counted = []
     total_path_in_table = sum(table_draw_tree_df.loc[outcome_table_bool, 'table'])
-    path_double_counted_bucket = np.zeros(total_path_in_table)
+    path_double_counted_bucket = np.zeros(outcome_table_bool.shape[0])
     # path_double_counted
     tree_dir = outputDir
     # if max_count > 1:
     for k, v in tree_counts.items():
+        print(v)
         if v[0] == max_count:
             # path_indices = v[1]
             if v[0] > 1:
-                print(v[1])
+                # print(v[1])
                 path_double_counted = path_double_counted + [tuple(sorted(v[1]))]
             split_idx, booster_idx = k
             draw_xgb_tree(test_size, split_idx, tree_dir,
