@@ -1026,7 +1026,6 @@ def runWorkflow(**kargs):
         if v[0] == max_count:
             # path_indices = v[1]
             if v[0] > 1:
-                # print(v[1])
                 path_double_counted = path_double_counted + [tuple(sorted(v[1]))]
             split_idx, booster_idx = k
             draw_xgb_tree(test_size, split_idx, tree_dir,
@@ -1039,8 +1038,10 @@ def runWorkflow(**kargs):
             # print(j, old_value)
             path_double_counted_bucket[j] = old_value + 1
 
-    number_of_double_counted = path_double_counted_bucket > 1
-    print(number_of_double_counted)
+    number_of_double_counted = path_double_counted_bucket >= 1
+
+
+    print(path_double_counted_bucket)
 
     print('Least number of trees included in the table:', sum(number_of_double_counted))
 
