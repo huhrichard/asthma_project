@@ -995,7 +995,7 @@ def runWorkflow(**kargs):
                 opposite_files = find('occur_*{}_coef*.csv'.format(opposite_profile), result_dir)
                 # opposite_files = [f for f in opposite_files if ' ' not in f]
                 # print(topk_profile_str[idx], opposite_profile, opposite_files)
-                if (len(opposite_files) == 0 ) or (len(path.split('\t')) > 1):
+                if (len(opposite_files) == 0) or (len(path.split('\t')) > 1):
                     profile_counter += 1
                     cols = p_val_df.columns
                     p_val_df = p_val_df.append({cols[0]: topk_profile_str[idx],
