@@ -960,10 +960,10 @@ def runWorkflow(**kargs):
                             # print('printing XGB Trees')
                             split_idx, booster_idx = path_loc
                             if not ((split_idx, booster_idx) in tree_counts):
-                                tree_counts[(split_idx, booster_idx)] = (1, [path_idx])
+                                tree_counts[(split_idx, booster_idx)] = (1, [idx])
                             else:
                                 old_count, path_array = tree_counts[(split_idx, booster_idx)]
-                                path_array.append(path_idx)
+                                path_array.append(idx)
                                 # print(path_array)
                                 tree_counts[(split_idx, booster_idx)] = (old_count + 1, path_array)
 
