@@ -1042,7 +1042,7 @@ def runWorkflow(**kargs):
             # print(j, old_value)
             path_double_counted_bucket[j] = old_value + 1
 
-    number_of_double_counted = path_double_counted_bucket >= 1
+    number_of_double_counted = path_double_counted_bucket > 1
 
     print(path_double_counted_bucket)
 
