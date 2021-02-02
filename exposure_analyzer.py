@@ -852,6 +852,7 @@ def runWorkflow(**kargs):
         # print(len(topk_profile_str))
         profile_counter = 0
         tree_counts = {}
+        table_count = 0
         table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
         outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
         for idx, (profile, profile_occurrence) in enumerate(sorted_paths):
@@ -954,6 +955,7 @@ def runWorkflow(**kargs):
                                                            'table']
                     #
                     if profile_condition.all():
+                        table_count = table_count + 1
                         for path_idx, path_loc in enumerate(path_from):
                             # print('printing XGB Trees')
                             split_idx, booster_idx = path_loc
@@ -1018,8 +1020,8 @@ def runWorkflow(**kargs):
     max_count = max([v[0] for k, v in tree_counts.items()])
     path_double_counted = []
     total_path_in_table = sum(table_draw_tree_df.loc[outcome_table_bool, 'table'])
-    path_double_counted_bucket = np.zeros(len(sorted_paths))
-    print(path_double_counted_bucket.shape, total_path_in_table)
+    path_double_counted_bucket = np.zeros(profile_counter)
+    print(path_double_counted_bucket.shape, total_path_in_table, table_count)
     # path_double_counted
     tree_dir = outputDir
     # if max_count > 1:
@@ -1041,7 +1043,6 @@ def runWorkflow(**kargs):
             path_double_counted_bucket[j] = old_value + 1
 
     number_of_double_counted = path_double_counted_bucket >= 1
-
 
     print(path_double_counted_bucket)
 
