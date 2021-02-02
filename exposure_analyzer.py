@@ -1036,7 +1036,7 @@ def runWorkflow(**kargs):
                           visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y, count=v[0])
     path_double_counted_set = set(path_double_counted)
     print(path_double_counted_set)
-    for i in list(path_double_counted_set):
+    for i in path_double_counted_set:
         for j in i:
             old_value = path_double_counted_bucket[j]
             # print(j, old_value)
