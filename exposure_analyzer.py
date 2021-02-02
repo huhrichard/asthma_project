@@ -962,7 +962,7 @@ def runWorkflow(**kargs):
                             else:
                                 old_count, path_array = tree_counts[(split_idx, booster_idx)]
                                 path_array.append(path_idx)
-                                print(path_array)
+                                # print(path_array)
                                 tree_counts[(split_idx, booster_idx)] = (old_count + 1, path_array)
 
                 if (sign_pair[0] in topk_profile_str[idx] and sign_pair[1] in topk_profile_str[idx]) or profile_coef == 0:
@@ -1018,13 +1018,13 @@ def runWorkflow(**kargs):
     max_count = max([v[0] for k, v in tree_counts.items()])
     path_double_counted = []
     total_path_in_table = sum(table_draw_tree_df.loc[outcome_table_bool, 'table'])
-    path_double_counted_bucket = np.zeros(outcome_table_bool.shape[0])
-    print(path_double_counted_bucket.shape)
+    path_double_counted_bucket = np.zeros(len(sorted_paths))
+    print(path_double_counted_bucket.shape, total_path_in_table)
     # path_double_counted
     tree_dir = outputDir
     # if max_count > 1:
     for k, v in tree_counts.items():
-        print(v)
+        # print(v)
         if v[0] == max_count:
             # path_indices = v[1]
             if v[0] > 1:
