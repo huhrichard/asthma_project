@@ -959,6 +959,12 @@ def runWorkflow(**kargs):
                         for path_idx, path_loc in enumerate(path_from):
                             # print('printing XGB Trees')
                             split_idx, booster_idx = path_loc
+                            tree_dir = os.path.join(outputDir, p_name)
+                            if not os.path.exists(tree_dir):
+                                os.mkdir(tree_dir)
+                            draw_xgb_tree(test_size, split_idx, tree_dir,
+                                          visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y,
+                                          count=0)
                             if not ((split_idx, booster_idx) in tree_counts):
                                 tree_counts[(split_idx, booster_idx)] = (1, [idx])
                             else:
