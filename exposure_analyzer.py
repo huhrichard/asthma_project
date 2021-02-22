@@ -821,7 +821,7 @@ def runWorkflow(**kargs):
 
     # 3. visualize the tree (deferred to analyze_path())
     ######################################################
-    test_size = 0.3
+    test_size = 0.2
     rs = 53
     # topk = 10
     topk_vars = 10
@@ -844,6 +844,13 @@ def runWorkflow(**kargs):
                           fmap_fn=fmap_fn, plot_dir=plotDir,
                           outcome_name=outcome_folder_name, xgb=xgb)
 
+        scores_df = pd.DataFrame({'f_minority':scores['scores'][0],
+                                'f_minority_rand': scores['scores_random'][0],
+                                'f_majority': scores['scores'][1],
+                                'f_majority_rand': scores['scores_random'][1],
+                                'auc': scores['scores'][2],
+                                'auc_rand': scores['scores_random'][2]})
+        scores_df.to_csv(os.path.join(outcome_dir, 'scores_df.csv'))
         """
         Regression with Cofounders
         """
@@ -870,6 +877,7 @@ def runWorkflow(**kargs):
                 print(profile,' pos_count :', sum(binary_profile==1), 'out of ', binary_profile.shape[0])
                 profile_df = pd.DataFrame({topk_profile_str[idx]: binary_profile})
                 regression_x_df = pd.concat([profile_df, confounders_df], axis=1)
+
                 all_equal_drop_col = []
                 for col in regression_x_df:
                     unique_value = regression_x_df[col].unique()
@@ -877,20 +885,20 @@ def runWorkflow(**kargs):
                         all_equal_drop_col.append(col)
                 # print('Column(s) with all equal entries:', all_equal_drop_col)
 
-                regression_x_df.drop(all_equal_drop_col, axis=1, inplace=True)
+                regression_x_df_drop = regression_x_df.drop(all_equal_drop_col, axis=1)
 
                 try:
-                    X_np = np.array(regression_x_df)
+                    X_np = np.array(regression_x_df_drop)
                     X_corr = np.corrcoef(X_np, rowvar=0)
                     # print(X_corr)
                     w, v = np.linalg.eig(X_corr)
                     # print('{} eigenvalues: {}'.format(profile, w))
                     # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
-                    regression_x_df['intercept'] = 1.0
+                    regression_x_df_drop['intercept'] = 1.0
                     if binary_outcome:
-                        regressor_with_confounders = sm.Logit(y, regression_x_df)
+                        regressor_with_confounders = sm.Logit(y, regression_x_df_drop)
                     else:
-                        regressor_with_confounders = sm.OLS(y, regression_x_df)
+                        regressor_with_confounders = sm.OLS(y, regression_x_df_drop)
 
                     # result = regressor_with_confounders.fit(skip_hessian=True)
                     result = regressor_with_confounders.fit()
@@ -899,10 +907,10 @@ def runWorkflow(**kargs):
 
                     regression_x_df['intercept'] = 1.0
                     if binary_outcome:
-                        regressor_with_confounders = sm.Logit(y, regression_x_df)
+                        regressor_with_confounders = sm.Logit(y, regression_x_df_drop)
                         result = regressor_with_confounders.fit(method='bfgs')
                     else:
-                        regressor_with_confounders = sm.OLS(y, regression_x_df)
+                        regressor_with_confounders = sm.OLS(y, regression_x_df_drop)
                         result = regressor_with_confounders.fit()
 
                 result_summary = result.summary()
@@ -954,6 +962,7 @@ def runWorkflow(**kargs):
                     profile_condition = table_draw_tree_df.loc[profile_table_bool & outcome_table_bool,
                                                            'table']
                     #
+
                     if profile_condition.all():
                         table_count = table_count + 1
                         for path_idx, path_loc in enumerate(path_from):
@@ -962,6 +971,8 @@ def runWorkflow(**kargs):
                             tree_dir = os.path.join(outputDir, p_name)
                             if not os.path.exists(tree_dir):
                                 os.mkdir(tree_dir)
+                            regression_x_df.to_csv(os.path.join(outputDir, '{}.csv'.format(p_name)))
+
                             draw_xgb_tree(test_size, split_idx, tree_dir,
                                           visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y,
                                           count=0)
