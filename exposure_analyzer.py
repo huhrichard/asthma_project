@@ -845,12 +845,23 @@ def runWorkflow(**kargs):
                           outcome_name=outcome_folder_name, xgb=xgb)
 
         scores_df = pd.DataFrame({'f_minority':scores['scores'][0],
-                                'f_minority_rand': scores['scores_random'][0],
+                                # 'f_minority_rand': scores['scores_random'][0],
                                 'f_majority': scores['scores'][1],
-                                'f_majority_rand': scores['scores_random'][1],
+                                # 'f_majority_rand': scores['scores_random'][1],
                                 'auc': scores['scores'][2],
-                                'auc_rand': scores['scores_random'][2]})
+                                # 'auc_rand': scores['scores_random'][2]
+                                  })
         scores_df.to_csv(os.path.join(outcome_dir, 'scores_df.csv'))
+        scores_rand_df = pd.DataFrame({
+                                    # 'f_minority': scores['scores'][0],
+                                  'f_minority_rand': scores['scores_random'][0],
+                                  # 'f_majority': scores['scores'][1],
+                                  'f_majority_rand': scores['scores_random'][1],
+                                  # 'auc': scores['scores'][2],
+                                  'auc_rand': scores['scores_random'][2]
+                                    })
+        scores_rand_df.to_csv(os.path.join(outcome_dir, 'scores_rand_df.csv'))
+
         """
         Regression with Cofounders
         """
