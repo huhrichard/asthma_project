@@ -397,7 +397,7 @@ def classify(X, y, params={}, random_state=0, binary_outcome=True, **kargs):
 
         # leaf_search_space = np.append(np.linspace(0.02, 0.4, 5)*y.shape[0], 1).astype(int)[1:]
         leaf = False
-        pruning = False
+        pruning = True
         if leaf:
             leaf_search_space = np.append(np.array([0.05, 0.1, 0.2, 0.3, 0.4])*y.shape[0], 1).astype(int)
         else:
@@ -869,8 +869,9 @@ def runWorkflow(**kargs):
         np.random.seed(0)
         # print(len(topk_profile_str))
         profile_counter = 0
-        tree_counts = {}
+
         if xgb_predict:
+            tree_counts = {}
             table_count = 0
             table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
             outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
@@ -1047,34 +1048,34 @@ def runWorkflow(**kargs):
                                     # cols[9]: np.mean(np.array(scores)),
                                     # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
                                     }, ignore_index=True)
-    max_count = max([v[0] for k, v in tree_counts.items()])
-    path_double_counted = []
-    total_path_in_table = sum(table_draw_tree_df.loc[outcome_table_bool, 'table'])
-    path_double_counted_bucket = np.zeros(profile_counter)
-    print(path_double_counted_bucket.shape, total_path_in_table, table_count)
-    # path_double_counted
-    tree_dir = outputDir
-    # if max_count > 1:
-    for k, v in tree_counts.items():
-        # print(v)
-        if v[0] == max_count:
-            # path_indices = v[1]
-            if v[0] > 1:
-                path_double_counted = path_double_counted + [tuple(sorted(v[1]))]
-            split_idx, booster_idx = k
-            draw_xgb_tree(test_size, split_idx, tree_dir,
-                          visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y, count=v[0])
-    path_double_counted_set = set(path_double_counted)
-    print(path_double_counted_set)
-    for i in path_double_counted_set:
-        for j in i:
-            old_value = path_double_counted_bucket[j]
-            # print(j, old_value)
-            path_double_counted_bucket[j] = old_value + 1
-
-    number_of_double_counted = path_double_counted_bucket > 1
-
-    print(path_double_counted_bucket)
+    # max_count = max([v[0] for k, v in tree_counts.items()])
+    # path_double_counted = []
+    # total_path_in_table = sum(table_draw_tree_df.loc[outcome_table_bool, 'table'])
+    # path_double_counted_bucket = np.zeros(profile_counter)
+    # print(path_double_counted_bucket.shape, total_path_in_table, table_count)
+    # # path_double_counted
+    # tree_dir = outputDir
+    # # if max_count > 1:
+    # for k, v in tree_counts.items():
+    #     # print(v)
+    #     if v[0] == max_count:
+    #         # path_indices = v[1]
+    #         if v[0] > 1:
+    #             path_double_counted = path_double_counted + [tuple(sorted(v[1]))]
+    #         split_idx, booster_idx = k
+    #         draw_xgb_tree(test_size, split_idx, tree_dir,
+    #                       visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y, count=v[0])
+    # path_double_counted_set = set(path_double_counted)
+    # print(path_double_counted_set)
+    # for i in path_double_counted_set:
+    #     for j in i:
+    #         old_value = path_double_counted_bucket[j]
+    #         # print(j, old_value)
+    #         path_double_counted_bucket[j] = old_value + 1
+    #
+    # number_of_double_counted = path_double_counted_bucket > 1
+    #
+    # print(path_double_counted_bucket)
 
     print('Least number of trees included in the table:', sum(number_of_double_counted))
 
