@@ -1151,8 +1151,8 @@ if __name__ == "__main__":
     # suffix = 'nbt_xgb_multiple_counts'
     outcome = sys.argv[-2]
     suffix = sys.argv[-1]
-    # xgb_predict = True
-    xgb_predict = False
+    xgb_predict = True
+    # xgb_predict = False
     plot_predir = './plot_{}'.format(suffix)
     if not os.path.exists(plot_predir):
         os.mkdir(plot_predir)
