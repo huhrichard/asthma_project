@@ -336,9 +336,10 @@ def load_merge(vars_matrix='exposures-4yrs.csv',
     asthma_df = pd.read_csv(fpath_labels, header=0, sep=sep)
 
     # Race need to be one-hot encoded
-    one_hot_encoded_cols = ["Race"]
+    race_df = pd.read_csv('./data/RaceEthnicity_YC_05042021.csv', header=0, sep=sep)
+    one_hot_encoded_cols = ["race/ethnicity"]
 
-    one_hot_encoded_df = pd.get_dummies(asthma_df[one_hot_encoded_cols], prefix=one_hot_encoded_cols)
+    one_hot_encoded_df = pd.get_dummies(race_df[one_hot_encoded_cols], prefix=one_hot_encoded_cols)
 
 
 

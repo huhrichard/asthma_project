@@ -286,7 +286,8 @@ def summarize_plot(col='fdr', pollutant_suffix='', method_suffix='', outcome_col
 
     # pollutant_list = ['EC', 'OC', 'SO4', 'NH4', 'Nit', 'NO2', 'PM2.5']
 
-    fdr_path = './fdr_{}_count10.csv'.format(method_suffix)
+    # fdr_path = './fdr_{}_count10.csv'.format(method_suffix)
+    fdr_path = './fdr_{}.csv'.format(method_suffix)
     fdr_df = pd.read_csv(fdr_path, sep=',')
     fdr_df = fdr_df.loc[fdr_df['outcome'].isin(outcome_list)]
     print(fdr_df['outcome'].unique())
@@ -327,17 +328,34 @@ def summarize_plot(col='fdr', pollutant_suffix='', method_suffix='', outcome_col
         if len(pollutant_profile) == 1:
             # set_p_fdr = pollutant_profile[0]
             set_p_fdr = pollutant_profile[0].split(sign_pair[1])[0].split(sign_pair[0])[0]
-            print(set_p_fdr)
+            print(relation_to_outcome)
             # list_profile_thres[]
             if set_p_fdr in single_pollutant_fdr:
                 single_pollutant_fdr[set_p_fdr][idx] = pollutant_row[col]
-                single_pollutant_coef[set_p_fdr][idx] = abs(pollutant_row['coef'])
+                sign_coef = 1
+                if relation_to_outcome == "pos_correlate" and pollutant_row['coef'] < 0:
+                    sign_coef = -1
+                if relation_to_outcome == "neg_correlate" and pollutant_row['coef'] > 0:
+                    sign_coef = -1
+                single_pollutant_coef[set_p_fdr][idx] = "{:.3f} ({:.3f}, {:.3f})".format(np.exp(sign_coef*pollutant_row['coef']),
+                                                                             np.exp(sign_coef*pollutant_row['coef_95CI_lower']),
+                                                                             np.exp(sign_coef*pollutant_row['coef_95CI_upper']))
+
                 single_pollutant_freq[set_p_fdr][idx] = abs(pollutant_row['freq'])
             else:
                 single_pollutant_fdr[set_p_fdr] = np.ones(len(outcome_list))
                 single_pollutant_fdr[set_p_fdr][idx] = pollutant_row[col]
-                single_pollutant_coef[set_p_fdr] = np.zeros(len(outcome_list))
-                single_pollutant_coef[set_p_fdr][idx] = abs(pollutant_row['coef'])
+                single_pollutant_coef[set_p_fdr] = np.full_like(np.zeros(len(outcome_list)), 'dummy'*5, dtype=object)
+                sign_coef = 1
+                if relation_to_outcome == "pos_correlate" and pollutant_row['coef'] < 0:
+                    sign_coef = -1
+                if relation_to_outcome == "neg_correlate" and pollutant_row['coef'] > 0:
+                    sign_coef = -1
+                single_pollutant_coef[set_p_fdr][idx] = "{:.3f} ({:.3f}, {:.3f})".format(
+                    np.exp(sign_coef * pollutant_row['coef']),
+                    np.exp(sign_coef * pollutant_row['coef_95CI_lower']),
+                    np.exp(sign_coef * pollutant_row['coef_95CI_upper']))
+
                 single_pollutant_freq[set_p_fdr] = np.zeros(len(outcome_list))
                 single_pollutant_freq[set_p_fdr][idx] = abs(pollutant_row['freq'])
         else:
@@ -359,13 +377,17 @@ def summarize_plot(col='fdr', pollutant_suffix='', method_suffix='', outcome_col
             # set_p_fdr = tuple(pollutant_profile)
             if set_p_fdr in multi_pollutant_fdr:
                 multi_pollutant_fdr[set_p_fdr][idx] = pollutant_row[col]
-                multi_pollutant_coef[set_p_fdr][idx] = abs(pollutant_row['coef'])
+                multi_pollutant_coef[set_p_fdr][idx] = "{:.3f} ({:.3f}, {:.3f})".format(np.exp(pollutant_row['coef']),
+                                                                             np.exp(pollutant_row['coef_95CI_lower']),
+                                                                             np.exp(pollutant_row['coef_95CI_upper']))
                 multi_pollutant_freq[set_p_fdr][idx] = abs(pollutant_row['freq'])
             else:
                 multi_pollutant_fdr[set_p_fdr] = np.ones(len(outcome_list))
                 multi_pollutant_fdr[set_p_fdr][idx] = pollutant_row[col]
-                multi_pollutant_coef[set_p_fdr] = np.zeros(len(outcome_list))
-                multi_pollutant_coef[set_p_fdr][idx] = abs(pollutant_row['coef'])
+                multi_pollutant_coef[set_p_fdr] = np.full_like(np.zeros(len(outcome_list)), 'dummy'*5, dtype=object)
+                multi_pollutant_coef[set_p_fdr][idx] = "{:.3f} ({:.3f}, {:.3f})".format(np.exp(pollutant_row['coef']),
+                                                                             np.exp(pollutant_row['coef_95CI_lower']),
+                                                                             np.exp(pollutant_row['coef_95CI_upper']))
                 multi_pollutant_freq[set_p_fdr] = np.zeros(len(outcome_list))
                 multi_pollutant_freq[set_p_fdr][idx] = abs(pollutant_row['freq'])
 
@@ -714,7 +736,7 @@ def summarize_plot(col='fdr', pollutant_suffix='', method_suffix='', outcome_col
                 for idx_c, c in enumerate(merged_df_sub.columns):
                     if merged_fdr_df_sub.loc[r, c] < 0.05:
                         plot_txt_fdr = 'FDR={:.2e}\nCount={:d}'.format(merged_fdr_df_sub.loc[r, c], int(merged_freq_df_sub.loc[r, c]))
-                        plot_txt_coef = '{:.3f}\nCount={:d}'.format(merged_coef_df_sub.loc[r, c], int(merged_freq_df_sub.loc[r, c]))
+                        plot_txt_coef = '{}\nCount={:d}'.format(merged_coef_df_sub.loc[r, c], int(merged_freq_df_sub.loc[r, c]))
                         im1.axes.text(idx_c, idx_r, plot_txt_fdr, ha="center", va="center", color="w", size=28,
                                       fontweight='bold')
                         im2.axes.text(idx_c, idx_r, plot_txt_coef, ha="center", va="center", color="w", size=28,
@@ -745,6 +767,16 @@ def summarize_plot(col='fdr', pollutant_suffix='', method_suffix='', outcome_col
         ws_freq = wb.create_sheet(profile_cat + '_frequency')
         for r in dataframe_to_rows(merged_freq_df_cat_replaced, index=True, header=True):
             ws_freq.append(r)
+
+        merged_coef_df_cat_replaced = merged_coef_df_cat.replace('dummy'*5, '')
+        ws_freq = wb.create_sheet(profile_cat + '_odds_ratio')
+        for r in dataframe_to_rows(merged_coef_df_cat_replaced, index=True, header=True):
+            ws_freq.append(r)
+
+        # merged_coef_df_cat_replaced = merged_coef_df_cat.replace('dummy' * 5, '')
+        # ws_freq = wb.create_sheet(profile_cat + '_beta_and_CI')
+        # for r in dataframe_to_rows(merged_coef_df_cat_replaced, index=True, header=True):
+        #     ws_freq.append(r)
 
         # merged_fdr_df_cat.to_csv(os.path.join(cat_dir,'summary_{}_{}.csv'.format(col, pollutant_suffix)))
 
@@ -862,9 +894,10 @@ def summarize_plot(col='fdr', pollutant_suffix='', method_suffix='', outcome_col
 #                       'bt_xgb_single_count',
 #                       'nbt_xgb_single_count']
 
-method_suffix_list = ['bt_multiple',
-                      'nbt_multiple',
-                      'bt_single',
+method_suffix_list = [
+                      #   'bt_multiple',
+                      # 'nbt_multiple',
+                      # 'bt_single',
                       'nbt_single']
 
 sig_list = ['fdr']
@@ -940,76 +973,76 @@ for outcome in outcome_list:
                 method_thres_df[profile_str] = bool_profile.astype(int)
         method_thres_df.to_csv(profile_output_str.format(method_suffix_list[m_idx], outcome), index=False)
 
-    for i in intersect_pollutant_list:
-        outcome_for_this_profile = list_of_profile_detail[0][i][1]
-        if outcome == outcome_for_this_profile:
-            bool_profile = np.ones(method_thres_df.shape[0]).astype(bool)
-            intersect_thres_df = orig_df[['ID', 'label']]
-            thres_mat = np.array([profile_detail[i][0] for profile_detail in list_of_profile_detail])
-            coef_mat = np.array([profile_detail[i][2] for profile_detail in list_of_profile_detail])
-            if np.median(coef_mat) > 0:
-                coef_sign = 'Positive'
-            else:
-                coef_sign = 'Negative'
-            if type(i) == tuple:
-                thres_median = np.median(thres_mat, axis=0)
-                key = '\n'.join(['{}{:.3e}'.format(single_p, thres_median[idx]) for idx, single_p in enumerate(i)])
-                multi = True
-                for idx, sp in enumerate(i):
-                    if sign_pair[0] in sp:
-                        sign_notation = sign_pair[0]
-                    else:
-                        sign_notation = sign_pair[1]
-                    current_bool = inequality_operators[sign_notation](orig_df[sp.replace(sign_notation, '')],
-                                                                       thres_median[idx])
-                    bool_profile = bool_profile & current_bool
-            else:
-                key = '{}{:.3e}'.format(i, np.median(thres_mat))
-                multi = False
-                if sign_pair[0] in i:
-                    sign_notation = sign_pair[0]
-                else:
-                    sign_notation = sign_pair[1]
-                bool_profile = inequality_operators[sign_notation](orig_df[i.replace(sign_notation, '')],
-                                                                   np.median(thres_mat))
-
-            intersect_thres_df[key] = bool_profile
-            intersect_thres_df.to_csv(profile_output_str.format('intersect', outcome), index=False)
-
-for i in intersect_pollutant_list:
-    # for m_idx, m in enumerate(method_suffix_list):
-    # print('{}: {}'.format(i, set_pollutants_with_outcome_list[m_idx][i]))
-    thres_mat = np.array([profile_detail[i][0] for profile_detail in list_of_profile_detail])
-    coef_mat = np.array([profile_detail[i][2] for profile_detail in list_of_profile_detail])
-    if np.median(coef_mat) > 0:
-        coef_sign = 'Positive'
-    else:
-        coef_sign = 'Negative'
-    if type(i) == tuple:
-        thres_median = np.median(thres_mat, axis=0)
-        key = '\n'.join(['{}{:.3e}'.format(single_p, thres_median[idx]) for idx, single_p in enumerate(i)])
-        multi = True
-    else:
-        key = '{}{:.3e}'.format(i, np.median(thres_mat))
-        multi = False
-    # sp = set_pollutants_with_outcome_list[0][i]
-
-    intersect_pollutant_dictionary[key] = (list_of_profile_detail[0][i][1], coef_sign, multi)
-
-print(intersect_pollutant_dictionary)
-intersect_df = pd.DataFrame({'mutually inclusive profile': [k for k, v in intersect_pollutant_dictionary.items()],
-                             'outcome': [v[0] for k, v in intersect_pollutant_dictionary.items()],
-                             'coef': [v[1] for k, v in intersect_pollutant_dictionary.items()],
-                             'combination': [v[2] for k, v in intersect_pollutant_dictionary.items()],
-                             }
-                            )
-
-category_outcome = pd.api.types.CategoricalDtype(categories=outcome_list, ordered=True)
-intersect_df['outcome'] = intersect_df['outcome'].astype(category_outcome)
-intersect_df.sort_values(by=['outcome'], inplace=True)
-intersect_df.sort_values(by=['combination'], inplace=True, ascending=False)
-
-# print(intersect_df)
-intersect_df.to_csv('intersection_of_extracted_profile.csv', index=False)
+#     for i in intersect_pollutant_list:
+#         outcome_for_this_profile = list_of_profile_detail[0][i][1]
+#         if outcome == outcome_for_this_profile:
+#             bool_profile = np.ones(method_thres_df.shape[0]).astype(bool)
+#             intersect_thres_df = orig_df[['ID', 'label']]
+#             thres_mat = np.array([profile_detail[i][0] for profile_detail in list_of_profile_detail])
+#             coef_mat = np.array([profile_detail[i][2] for profile_detail in list_of_profile_detail])
+#             if np.median(coef_mat) > 0:
+#                 coef_sign = 'Positive'
+#             else:
+#                 coef_sign = 'Negative'
+#             if type(i) == tuple:
+#                 thres_median = np.median(thres_mat, axis=0)
+#                 key = '\n'.join(['{}{:.3e}'.format(single_p, thres_median[idx]) for idx, single_p in enumerate(i)])
+#                 multi = True
+#                 for idx, sp in enumerate(i):
+#                     if sign_pair[0] in sp:
+#                         sign_notation = sign_pair[0]
+#                     else:
+#                         sign_notation = sign_pair[1]
+#                     current_bool = inequality_operators[sign_notation](orig_df[sp.replace(sign_notation, '')],
+#                                                                        thres_median[idx])
+#                     bool_profile = bool_profile & current_bool
+#             else:
+#                 key = '{}{:.3e}'.format(i, np.median(thres_mat))
+#                 multi = False
+#                 if sign_pair[0] in i:
+#                     sign_notation = sign_pair[0]
+#                 else:
+#                     sign_notation = sign_pair[1]
+#                 bool_profile = inequality_operators[sign_notation](orig_df[i.replace(sign_notation, '')],
+#                                                                    np.median(thres_mat))
+#
+#             intersect_thres_df[key] = bool_profile
+#             intersect_thres_df.to_csv(profile_output_str.format('intersect', outcome), index=False)
+#
+# for i in intersect_pollutant_list:
+#     # for m_idx, m in enumerate(method_suffix_list):
+#     # print('{}: {}'.format(i, set_pollutants_with_outcome_list[m_idx][i]))
+#     thres_mat = np.array([profile_detail[i][0] for profile_detail in list_of_profile_detail])
+#     coef_mat = np.array([profile_detail[i][2] for profile_detail in list_of_profile_detail])
+#     if np.median(coef_mat) > 0:
+#         coef_sign = 'Positive'
+#     else:
+#         coef_sign = 'Negative'
+#     if type(i) == tuple:
+#         thres_median = np.median(thres_mat, axis=0)
+#         key = '\n'.join(['{}{:.3e}'.format(single_p, thres_median[idx]) for idx, single_p in enumerate(i)])
+#         multi = True
+#     else:
+#         key = '{}{:.3e}'.format(i, np.median(thres_mat))
+#         multi = False
+#     # sp = set_pollutants_with_outcome_list[0][i]
+#
+#     intersect_pollutant_dictionary[key] = (list_of_profile_detail[0][i][1], coef_sign, multi)
+#
+# print(intersect_pollutant_dictionary)
+# intersect_df = pd.DataFrame({'mutually inclusive profile': [k for k, v in intersect_pollutant_dictionary.items()],
+#                              'outcome': [v[0] for k, v in intersect_pollutant_dictionary.items()],
+#                              'coef': [v[1] for k, v in intersect_pollutant_dictionary.items()],
+#                              'combination': [v[2] for k, v in intersect_pollutant_dictionary.items()],
+#                              }
+#                             )
+#
+# category_outcome = pd.api.types.CategoricalDtype(categories=outcome_list, ordered=True)
+# intersect_df['outcome'] = intersect_df['outcome'].astype(category_outcome)
+# intersect_df.sort_values(by=['outcome'], inplace=True)
+# intersect_df.sort_values(by=['combination'], inplace=True, ascending=False)
+#
+# # print(intersect_df)
+# intersect_df.to_csv('intersection_of_extracted_profile.csv', index=False)
 # summarize_plot('p_val')
 # summarize_plot('fdr')

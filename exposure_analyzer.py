@@ -783,12 +783,18 @@ def runWorkflow(**kargs):
 
     confounding_vars = ['age', 'avg_income',
                        # 'race'
-                       'Race_Asian',
-                       'Race_Black or African American',
-                       'Race_More Than One Race',
-                       'Race_Native Hawaiian or Other Pacific Islander',
-                       'Race_Unknown / Not Reported',
-                       'Race_White',
+                       # 'Race_Asian',
+                       # 'Race_Black or African American',
+                       # 'Race_More Than One Race',
+                       # 'Race_Native Hawaiian or Other Pacific Islander',
+                       # 'Race_Unknown / Not Reported',
+                       # 'Race_White',
+                        'race/ethnicity_Asian',
+                        'race/ethnicity_Black or African American',
+                        'race/ethnicity_Hispanic or Latino',
+                        'race/ethnicity_More Than One Race',
+                        'race/ethnicity_Unknown / Not Reported',
+                        'race/ethnicity_White',
                        'gender',
                        ]
     # exclude_vars = ['Gender', 'Zip Code'] + confounding_vars
