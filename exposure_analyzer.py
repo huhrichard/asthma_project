@@ -876,11 +876,11 @@ def runWorkflow(**kargs):
         # print(len(topk_profile_str))
         profile_counter = 0
 
-        if xgb_predict:
-            tree_counts = {}
-            table_count = 0
-            table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
-            outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
+        # if xgb_predict:
+        #     tree_counts = {}
+        #     table_count = 0
+        #     table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
+        #     outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
         for idx, (profile, profile_occurrence) in enumerate(sorted_paths):
             # print(y)
             # print(profile_counter)
@@ -933,7 +933,7 @@ def runWorkflow(**kargs):
                         result = regressor_with_confounders.fit()
 
                 result_summary = result.summary()
-
+                print(result_summary)
 
 
                 """
@@ -974,35 +974,35 @@ def runWorkflow(**kargs):
                     elif profile_str.count('\t') == 0:
                         profile_group = 'single_pollutant'
 
-                    if xgb_predict:
-                        # if (profile_group == 'all_greater') or (profile_group == 'single_pollutant'):
-                        profile_table_bool = (table_draw_tree_df['profile'] == topk_profile_str[idx])
-                        # print(topk_profile_str[idx])
-
-                        profile_condition = table_draw_tree_df.loc[profile_table_bool & outcome_table_bool,
-                                                               'table']
-                        #
-
-                        if profile_condition.all():
-                            table_count = table_count + 1
-                            for path_idx, path_loc in enumerate(path_from):
-                                # print('printing XGB Trees')
-                                split_idx, booster_idx = path_loc
-                                tree_dir = os.path.join(outputDir, p_name)
-                                if not os.path.exists(tree_dir):
-                                    os.mkdir(tree_dir)
-                                regression_x_df.to_csv(os.path.join(outputDir, '{}.csv'.format(p_name)))
-
-                                draw_xgb_tree(test_size, split_idx, tree_dir,
-                                              visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y,
-                                              count=0)
-                                if not ((split_idx, booster_idx) in tree_counts):
-                                    tree_counts[(split_idx, booster_idx)] = (1, [idx])
-                                else:
-                                    old_count, path_array = tree_counts[(split_idx, booster_idx)]
-                                    path_array.append(idx)
-                                    # print(path_array)
-                                    tree_counts[(split_idx, booster_idx)] = (old_count + 1, path_array)
+                    # if xgb_predict:
+                    #     # if (profile_group == 'all_greater') or (profile_group == 'single_pollutant'):
+                    #     profile_table_bool = (table_draw_tree_df['profile'] == topk_profile_str[idx])
+                    #     # print(topk_profile_str[idx])
+                    #
+                    #     profile_condition = table_draw_tree_df.loc[profile_table_bool & outcome_table_bool,
+                    #                                            'table']
+                    #     #
+                    #
+                    #     if profile_condition.all():
+                    #         table_count = table_count + 1
+                    #         for path_idx, path_loc in enumerate(path_from):
+                    #             # print('printing XGB Trees')
+                    #             split_idx, booster_idx = path_loc
+                    #             tree_dir = os.path.join(outputDir, p_name)
+                    #             if not os.path.exists(tree_dir):
+                    #                 os.mkdir(tree_dir)
+                    #             regression_x_df.to_csv(os.path.join(outputDir, '{}.csv'.format(p_name)))
+                    #
+                    #             draw_xgb_tree(test_size, split_idx, tree_dir,
+                    #                           visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, X=X, y=y,
+                    #                           count=0)
+                    #             if not ((split_idx, booster_idx) in tree_counts):
+                    #                 tree_counts[(split_idx, booster_idx)] = (1, [idx])
+                    #             else:
+                    #                 old_count, path_array = tree_counts[(split_idx, booster_idx)]
+                    #                 path_array.append(idx)
+                    #                 # print(path_array)
+                    #                 tree_counts[(split_idx, booster_idx)] = (old_count + 1, path_array)
 
                 if (sign_pair[0] in topk_profile_str[idx] and sign_pair[1] in topk_profile_str[idx]) or profile_coef == 0:
                     relation_dir = possibleDirs[-1]
