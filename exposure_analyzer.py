@@ -928,7 +928,7 @@ def runWorkflow(**kargs):
                     print('throwing to exception')
                     if binary_outcome:
                         regressor_with_confounders = sm.Logit(y, regression_x_df_drop)
-                        result = regressor_with_confounders.fit(method='bfgs')
+                        result = regressor_with_confounders.fit(method='minimize')
                     else:
                         regressor_with_confounders = sm.OLS(y, regression_x_df_drop)
                         result = regressor_with_confounders.fit()
