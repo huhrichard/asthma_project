@@ -909,7 +909,7 @@ def runWorkflow(**kargs):
                 try:
                     X_np = np.array(regression_x_df_drop)
                     X_corr = np.corrcoef(X_np, rowvar=0)
-                    # print(X_corr)
+                    print(X_corr)
                     w, v = np.linalg.eig(X_corr)
                     # print('{} eigenvalues: {}'.format(profile, w))
                     # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
@@ -925,6 +925,7 @@ def runWorkflow(**kargs):
                 except Exception as inst:
 
                     regression_x_df['intercept'] = 1.0
+                    print('throwing to exception')
                     if binary_outcome:
                         regressor_with_confounders = sm.Logit(y, regression_x_df_drop)
                         result = regressor_with_confounders.fit(method='bfgs')
