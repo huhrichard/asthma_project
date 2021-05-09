@@ -907,7 +907,7 @@ def runWorkflow(**kargs):
                 regression_x_df_drop = regression_x_df.drop(all_equal_drop_col, axis=1)
                 from sklearn.preprocessing import StandardScaler
                 scaler = StandardScaler().fit(regression_x_df_drop)
-                regression_x_df_drop = scaler.transform(regression_x_df_drop)
+                regression_x_df_drop[:] = scaler.transform(regression_x_df_drop)
                 try:
                     X_np = np.array(regression_x_df_drop)
                     X_corr = np.corrcoef(X_np, rowvar=0)
@@ -930,7 +930,7 @@ def runWorkflow(**kargs):
                     print('throwing to exception')
                     if binary_outcome:
                         regressor_with_confounders = sm.Logit(y, regression_x_df_drop)
-                        result = regressor_with_confounders.fit(method='bfgs')
+                        result = regressor_with_confounders.fit_regularized()
                     else:
                         regressor_with_confounders = sm.OLS(y, regression_x_df_drop)
                         result = regressor_with_confounders.fit()
