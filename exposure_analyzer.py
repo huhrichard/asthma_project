@@ -1143,8 +1143,8 @@ def runWorkflow(**kargs):
                                     cols[8]: sum(binary_profile == 1),
                                     cols[9]: sum(binary_profile == -1),
                                     cols[10]: binary_outcome,
-                                    cols[11]: list_params['max_count']
-                                    cols[12]: interactions_pv
+                                    cols[11]: list_params['max_count'],
+                                    cols[12]: interactions_pv,
                                     cols[13]: interactions
                                     # cols[9]: np.mean(np.array(scores)),
                                     # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
