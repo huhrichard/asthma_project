@@ -753,7 +753,7 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
         for x_idx, features in enumerate(X):
             if inequality_operators[sign](features[feature_idx[node]], path_threshold[n_idx]):
                 profile_indicator[x_idx] = neg_value
-                pollutants_indicators[n_idx, x_idx] = neg_value
+                pollutants_indicators[x_idx, n_idx] = neg_value
 
     p_df = pd.DataFrame(pollutants_indicators, columns=node_list)
     pset_pollutant = powerset(node_list)
