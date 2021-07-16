@@ -718,13 +718,34 @@ def draw_xgb_tree(test_size, split_idx, tree_dir,
                           tree_dir=tree_dir)
 
 
+import math
+def nCr(n,r):
+    f = math.factorial
+    return f(n) / f(r) / f(n-r)
 
+def powerset(s):
+    x = len(s)
+    masks = [1 << i for i in range(x)]
+    for i in range(1 << x):
+        yield [ss for mask, ss in zip(masks, s) if i & mask]
 
 def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, sep='\t'):
     profile_indicator = np.ones((X.shape[0]))
-    neg_value = -1
+    number_pollutants = len(path.split(sep))
+    pollutants_indicators = np.ones((X.shape[0], number_pollutants))
+    pollutants_interactions = []
+    for i in range(1,number_pollutants):
+        r = i+1
+        combs = nCr(number_pollutants, r)
+        for j in range(combs):
+            pollutants_interactions.append(np.ones((X.shape[0], number_pollutants)))
+
+
+    node_list = []
+    neg_value = 0
     for n_idx, node_with_sign in enumerate(path.split(sep)):
         node = node_with_sign.replace(sign_pair[0], '').replace(sign_pair[1], '')
+        node_list.append(node_with_sign)
         if sign_pair[0] in node_with_sign:
             sign = sign_pair[1]
         else:
@@ -732,7 +753,27 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
         for x_idx, features in enumerate(X):
             if inequality_operators[sign](features[feature_idx[node]], path_threshold[n_idx]):
                 profile_indicator[x_idx] = neg_value
-    return profile_indicator
+                pollutants_indicators[n_idx, x_idx] = neg_value
+
+    p_df = pd.DataFrame(pollutants_indicators, columns=node_list)
+    pset_pollutant = powerset(node_list)
+
+    pset_pollutant_dict = {}
+    for pe in pset_pollutant:
+        if (len(pe) > 1):
+            joined_str = '_and_'.join(pe)
+            pe_array = np.ones((X.shape[0]))
+            for element in pe:
+                pe_array = pe_array*(p_df[element].values)
+            pset_pollutant_dict[joined_str] = pe_array
+
+    interactions_df = pd.DataFrame(pset_pollutant_dict)
+
+
+
+    return {'comb':profile_indicator,
+            'pollutants_df': pd.DataFrame(pollutants_indicators, columns=node_list),
+            'interactions_df': interactions_df}
 #
 # def plot_scores_hist()
 
@@ -892,10 +933,11 @@ def runWorkflow(**kargs):
                                                             path_threshold=paths_median_threshold[profile],
                                                             X=X, sign_pair=sign_pair
                                                             )
-                binary_profile = np.array(binary_profile)
+                binary_profile = np.array(binary_profile['comb'])
                 print(profile,' pos_count :', sum(binary_profile==1), 'out of ', binary_profile.shape[0])
                 profile_df = pd.DataFrame({topk_profile_str[idx]: binary_profile})
                 regression_x_df = pd.concat([profile_df, confounders_df], axis=1)
+
 
                 all_equal_drop_col = []
                 for col in regression_x_df:
@@ -926,7 +968,7 @@ def runWorkflow(**kargs):
 
                 except Exception as inst:
 
-                    regression_x_df['intercept'] = 1.0
+                    regression_x_df_drop['intercept'] = 1.0
                     print('throwing to exception')
                     if binary_outcome:
                         regressor_with_confounders = sm.Logit(y, regression_x_df_drop)
@@ -934,6 +976,8 @@ def runWorkflow(**kargs):
                     else:
                         regressor_with_confounders = sm.OLS(y, regression_x_df_drop)
                         result = regressor_with_confounders.fit()
+
+
 
                 result_summary = result.summary()
                 print(result_summary)
@@ -945,6 +989,52 @@ def runWorkflow(**kargs):
                 """
                 profile_coef = result.params.values[0]
                 p_val = result.pvalues.values[0]
+
+                """
+                Interaction terms
+                """
+                interactions_df = binary_profile['interactions_df']
+                interactions = interactions_df.columns
+                interactions_pv = []
+                # interactions_or =
+                for interaction in interactions:
+                    regression_pollutants_df = pd.concat([interactions_df[[interaction]],
+                                                          binary_profile['pollutants_df'],
+                                                          confounders_df], axis=1)
+                    regression_p_df_drop = regression_pollutants_df.drop(all_equal_drop_col, axis=1)
+                    from sklearn.preprocessing import StandardScaler
+                    scaler = StandardScaler().fit(regression_x_df_drop)
+                    regression_p_df_drop[:] = scaler.transform(regression_x_df_drop)
+
+                    try:
+                        X_np = np.array(regression_p_df_drop)
+                        X_corr = np.corrcoef(X_np, rowvar=0)
+                        # print(X_corr)
+                        w, v = np.linalg.eig(X_corr)
+                        print('{} eigenvalues: {}'.format(profile, w))
+                        # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
+                        regression_p_df_drop['intercept'] = 1.0
+                        if binary_outcome:
+                            regressor_with_confounders = sm.Logit(y, regression_p_df_drop)
+                        else:
+                            regressor_with_confounders = sm.OLS(y, regression_p_df_drop)
+
+                        # result = regressor_with_confounders.fit(skip_hessian=True)
+                        result_p = regressor_with_confounders.fit()
+
+                    except Exception as inst:
+
+                        regression_p_df_drop['intercept'] = 1.0
+                        print('throwing to exception')
+                        if binary_outcome:
+                            regressor_with_confounders = sm.Logit(y, regression_p_df_drop)
+                            result_p = regressor_with_confounders.fit_regularized()
+                        else:
+                            regressor_with_confounders = sm.OLS(y, regression_x_df_drop)
+                            result_p = regressor_with_confounders.fit()
+
+                    p_val_int = result_p.pvalues.values[0]
+
 
                 params = result.params
                 conf = result.conf_int()
@@ -1054,6 +1144,8 @@ def runWorkflow(**kargs):
                                     cols[9]: sum(binary_profile == -1),
                                     cols[10]: binary_outcome,
                                     cols[11]: list_params['max_count']
+                                    cols[12]: interactions_pv
+                                    cols[13]: interactions
                                     # cols[9]: np.mean(np.array(scores)),
                                     # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
                                     }, ignore_index=True)
@@ -1193,7 +1285,7 @@ if __name__ == "__main__":
         os.mkdir(plotDir)
     pvalue_df = pd.DataFrame(columns=['profile', 'outcome', 'p_val', 'relation',
                                       'coef', 'coef_95CI_lower', 'coef_95CI_upper','freq', 'pos_count', 'neg_count', 'binary_outcome',
-                                      'max_count'
+                                      'max_count','interaction_p_vals', 'interactions_combs'
 
                                       ])
     pred_score_df = pd.DataFrame(columns=['outcome', 'binary_outcome', 'mode of min_samples_of_leaf', 'year from',
