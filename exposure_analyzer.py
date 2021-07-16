@@ -769,7 +769,9 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
 
     interactions_df = pd.DataFrame(pset_pollutant_dict)
 
-
+    # profile_indicator = 2*profile_indicator - 1
+    # profile_indicators = 2*profile_indicators - 1
+    # interactions_df = 2*interactions_df - 1
 
     return {'comb':profile_indicator,
             'pollutants_df': pd.DataFrame(pollutants_indicators, columns=node_list),
@@ -928,12 +930,12 @@ def runWorkflow(**kargs):
             # if profile_counter > (len(sorted_paths)*0.1):
             #     break
             if profile_occurrence > 10:
-                binary_profile = profile_indicator_function(path=profile,
+                profile_dict = profile_indicator_function(path=profile,
                                                             feature_idx=feature_idx_dict,
                                                             path_threshold=paths_median_threshold[profile],
                                                             X=X, sign_pair=sign_pair
                                                             )
-                binary_profile = np.array(binary_profile['comb'])
+                binary_profile = np.array(profile_dict['comb'])
                 print(profile,' pos_count :', sum(binary_profile==1), 'out of ', binary_profile.shape[0])
                 profile_df = pd.DataFrame({topk_profile_str[idx]: binary_profile})
                 regression_x_df = pd.concat([profile_df, confounders_df], axis=1)
@@ -991,15 +993,16 @@ def runWorkflow(**kargs):
                 p_val = result.pvalues.values[0]
 
                 """
-                Interaction terms
+                
                 """
-                interactions_df = binary_profile['interactions_df']
+
+                interactions_df = profile_dict['interactions_df']
                 interactions = interactions_df.columns
                 interactions_pv = []
                 # interactions_or =
                 for interaction in interactions:
                     regression_pollutants_df = pd.concat([interactions_df[[interaction]],
-                                                          binary_profile['pollutants_df'],
+                                                          profile_dict['pollutants_df'],
                                                           confounders_df], axis=1)
                     regression_p_df_drop = regression_pollutants_df.drop(all_equal_drop_col, axis=1)
                     from sklearn.preprocessing import StandardScaler
