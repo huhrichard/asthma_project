@@ -733,12 +733,12 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
     profile_indicator = np.ones((X.shape[0]))
     number_pollutants = len(path.split(sep))
     pollutants_indicators = np.ones((X.shape[0], number_pollutants))
-    pollutants_interactions = []
-    for i in range(1,number_pollutants):
-        r = i+1
-        combs = nCr(number_pollutants, r)
-        for j in range(combs):
-            pollutants_interactions.append(np.ones((X.shape[0], number_pollutants)))
+    # pollutants_interactions = []
+    # for i in range(1,number_pollutants):
+    #     r = i+1
+    #     combs = nCr(number_pollutants, r)
+    #     for j in range(combs):
+    #         pollutants_interactions.append(np.ones((X.shape[0], number_pollutants)))
 
 
     node_list = []
