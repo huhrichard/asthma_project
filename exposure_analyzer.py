@@ -1047,11 +1047,13 @@ def runWorkflow(**kargs):
                         regression_p_df_drop['intercept'] = 1.0
                         print('throwing to exception')
                         if binary_outcome:
-                            regressor_with_confounders = sm.Logit(y, regression_p_df_drop)
+                            regressor_with_confounders = sm.Logit(y, regression_p_df_drop, method='bfgs')
                             result_p = regressor_with_confounders.fit_regularized()
                         else:
-                            regressor_with_confounders = sm.OLS(y, regression_x_df_drop)
+                            regressor_with_confounders = sm.OLS(y, regression_p_df_drop)
                             result_p = regressor_with_confounders.fit()
+                    # result_summary = result.summary()
+                    print(result_p.summary)
 
                     p_val_int = result_p.pvalues.values[0]
                     interactions_pv.append(p_val_int)
