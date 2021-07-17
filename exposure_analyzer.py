@@ -1006,8 +1006,8 @@ def runWorkflow(**kargs):
                                                           confounders_df], axis=1)
                     regression_p_df_drop = regression_pollutants_df.drop(all_equal_drop_col, axis=1)
                     from sklearn.preprocessing import StandardScaler
-                    scaler = StandardScaler().fit(regression_x_df_drop)
-                    regression_p_df_drop[:] = scaler.transform(regression_x_df_drop)
+                    scaler = StandardScaler().fit(regression_p_df_drop)
+                    regression_p_df_drop[:] = scaler.transform(regression_p_df_drop)
 
                     try:
                         X_np = np.array(regression_p_df_drop)
