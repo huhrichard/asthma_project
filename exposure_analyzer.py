@@ -3,10 +3,10 @@ import collections, random
 
 from matplotlib import pyplot as plt
 
-from sklearn.model_selection import train_test_split # Import train_test_split function
+from sklearn.model_selection import train_test_split  # Import train_test_split function
 from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor    # Import decision tree classifier model
-from sklearn import metrics #Import scikit-learn metrics module for accuracy calculation
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor  # Import decision tree classifier model
+from sklearn import metrics  # Import scikit-learn metrics module for accuracy calculation
 from sklearn import linear_model
 import statsmodels.api as sm
 from statsmodels.discrete.discrete_model import NegativeBinomial as neg_bin
@@ -24,17 +24,20 @@ import xgboost
 # from imblearn.over_sampling import RandomOverSampler
 import warnings
 import operator
+
 warnings.filterwarnings("ignore")
 import warnings
 from statsmodels.tools.sm_exceptions import ConvergenceWarning
+
 warnings.simplefilter('ignore', ConvergenceWarning)
 
 from decimal import Decimal
 from tabulate import tabulate
 # from utils_plot import saveFig
 from matplotlib.ticker import PercentFormatter
+
 plt.rcParams.update({'font.size': 12})
-params = {'mathtext.default': 'regular' }
+params = {'mathtext.default': 'regular'}
 plt.rcParams.update(params)
 
 inequality_operators = {'<': lambda x, y: x < y,
@@ -83,9 +86,10 @@ dataDir = os.path.join(os.getcwd(), 'data')  # default unless specified otherwis
 tree_seed = 0
 
 
-class Data(object): 
+class Data(object):
     label = 'label'
     features = []
+
 
 def f_max(y_true, y_pred):
     y_0 = (y_true == 0).sum()
@@ -94,8 +98,9 @@ def f_max(y_true, y_pred):
         y_true = 1 - y_true
         y_pred = 1 - y_pred
     precision, recall, _ = precision_recall_curve(y_true, y_pred)
-    fscores = 2*precision*recall/(precision+recall)
+    fscores = 2 * precision * recall / (precision + recall)
     return np.nanmax(fscores)
+
 
 def f_max_thres(y_true, y_pred, thres=None, minority=True):
     y_0 = (y_true == 0).sum()
@@ -105,25 +110,26 @@ def f_max_thres(y_true, y_pred, thres=None, minority=True):
         y_true = 1 - y_true
         y_pred = 1 - y_pred
 
-
     if thres is None:
         precision, recall, thres = precision_recall_curve(y_true, y_pred)
-        fscores = 2*precision*recall/(precision+recall)
-        return np.nanmax(fscores), thres[np.where(fscores==np.nanmax(fscores))][0]
+        fscores = 2 * precision * recall / (precision + recall)
+        return np.nanmax(fscores), thres[np.where(fscores == np.nanmax(fscores))][0]
     else:
         y_pred[y_pred > thres] = 1
         y_pred[y_pred <= thres] = 0
         precision, recall, fmeasure, _ = precision_recall_fscore_support(y_true, y_pred, average='binary')
         return fmeasure
 
+
 f_max_score_func = make_scorer(f_max)
 
-def features_to_txt(features, output_fn = 'fmap.txt'):
+
+def features_to_txt(features, output_fn='fmap.txt'):
     output_f = open(output_fn, 'w')
     for idx, f in enumerate(features):
         # output_f.write('{}\t{}\tq'.format(idx, 'dummy_'+str(idx)))
         output_f.write('{}\t{}\tq'.format(idx, f.replace(' ', '_')))
-        if idx+1 != len(features):
+        if idx + 1 != len(features):
             output_f.write('\n')
 
     output_f.close()
@@ -140,14 +146,16 @@ def find(pattern, path):
                 result.append(name)
     return result
 
+
 def subscript_like_chemical_name(pollutant_name):
     numbers = [2.5, 2, 4]
     for num in numbers:
         l = len(str(num))
-        if str(num) == pollutant_name[-1*l:]:
-            pollutant_name = "${}$".format(pollutant_name[:-1*l] + "_{"+ str(num) + "}")
+        if str(num) == pollutant_name[-1 * l:]:
+            pollutant_name = "${}$".format(pollutant_name[:-1 * l] + "_{" + str(num) + "}")
             return pollutant_name
     return pollutant_name
+
 
 def year_str_for_title(yr):
     if yr == '0':
@@ -156,6 +164,7 @@ def year_str_for_title(yr):
         return '+' + yr
     else:
         return yr
+
 
 def plot_histogram(asthma_df, plot_dir, pollutant_name, thres=0, label_plot=['with asthma', 'w/o asthma']):
     df = asthma_df[[pollutant_name, 'label']]
@@ -168,10 +177,9 @@ def plot_histogram(asthma_df, plot_dir, pollutant_name, thres=0, label_plot=['wi
     fig = plt.figure()
     ax = fig.add_subplot(111)
     _, bins, _ = ax.hist([pollutant_level_w_asthma, pollutant_level_wo_asthma],
-            weights=[np.ones(len(pollutant_level_w_asthma))/len(pollutant_level_w_asthma), np.ones(len(pollutant_level_wo_asthma))/len(pollutant_level_wo_asthma)],
-            label=label_plot, color=['red', 'green'])
-
-
+                         weights=[np.ones(len(pollutant_level_w_asthma)) / len(pollutant_level_w_asthma),
+                                  np.ones(len(pollutant_level_wo_asthma)) / len(pollutant_level_wo_asthma)],
+                         label=label_plot, color=['red', 'green'])
 
     ax.legend(loc='upper right')
     if thres != 0:
@@ -190,7 +198,6 @@ def plot_histogram(asthma_df, plot_dir, pollutant_name, thres=0, label_plot=['wi
     ax.set_ylabel('Fraction of children exposed (separated by class)'.format(pollutant_list[0]))
     # y_ticks = ax.get_yticks
     fig.savefig(os.path.join(plot_dir, "histogram_{}.png".format(pollutant_name)), bbox_inches="tight")
-
 
 
 def plot_scatter(asthma_df, plot_dir, pollutant_name, thres=0, ylabel=''):
@@ -232,6 +239,7 @@ def plot_scatter(asthma_df, plot_dir, pollutant_name, thres=0, ylabel=''):
 
     fig.savefig(os.path.join(plot_dir, "scatter_{}.png".format(pollutant_name)), bbox_inches="tight")
 
+
 def plot_hist2d(asthma_df, plot_dir, pollutant_name, thres=0, ylabel=''):
     df = asthma_df[[pollutant_name, 'label']]
 
@@ -271,10 +279,10 @@ def plot_hist2d(asthma_df, plot_dir, pollutant_name, thres=0, ylabel=''):
 
     fig.savefig(os.path.join(plot_dir, "hisf2d_{}.png".format(pollutant_name)), bbox_inches="tight")
 
-def run_model_selection(X, y, model, p_grid={}, n_trials=30, scoring='roc_auc', output_path='', output_file='', create_dir=True, 
-                        index=0, plot_=True, ext='tif', save=False, verbose=False):
 
-    
+def run_model_selection(X, y, model, p_grid={}, n_trials=30, scoring='roc_auc', output_path='', output_file='',
+                        create_dir=True,
+                        index=0, plot_=True, ext='tif', save=False, verbose=False):
     # Arrays to store scores
     non_nested_scores = np.zeros(n_trials)
     nested_scores = np.zeros(n_trials)
@@ -284,7 +292,6 @@ def run_model_selection(X, y, model, p_grid={}, n_trials=30, scoring='roc_auc', 
     ocv_num = 5
     best_params = {}
     for i in range(n_trials):
-
         # Choose cross-validation techniques for the inner and outer loops,
         # independently of the dataset.
         # E.g "GroupKFold", "LeaveOneOut", "LeaveOneGroupOut", etc.
@@ -295,7 +302,7 @@ def run_model_selection(X, y, model, p_grid={}, n_trials=30, scoring='roc_auc', 
         clf = GridSearchCV(estimator=model, param_grid=p_grid, cv=inner_cv, n_jobs=-1)
 
         fit_params = {
-                    "check_input": False}
+            "check_input": False}
         clf.fit(X, y)
         non_nested_scores[i] = clf.best_score_
 
@@ -309,9 +316,9 @@ def run_model_selection(X, y, model, p_grid={}, n_trials=30, scoring='roc_auc', 
     print("Average difference of {:6f} with std. dev. of {:6f}."
           .format(score_difference.mean(), score_difference.std()))
 
-    if plot_: 
+    if plot_:
         plt.clf()
-        
+
         # Plot scores on each trial for nested and non-nested CV
         plt.figure()
         plt.subplot(211)
@@ -333,29 +340,32 @@ def run_model_selection(X, y, model, p_grid={}, n_trials=30, scoring='roc_auc', 
                    bbox_to_anchor=(0, 1, .8, 0))
         plt.ylabel("score difference", fontsize="14")
 
-        if save: 
+        if save:
             from utils_plot import saveFig
             if not output_path: output_path = os.path.join(os.getcwd(), 'analysis')
             if not os.path.exists(output_path) and create_dir:
                 print('(run_model_selection) Creating analysis directory:\n%s\n' % output_path)
-                os.mkdir(output_path) 
+                os.mkdir(output_path)
 
-            if output_file is None: 
+            if output_file is None:
                 classifier = 'DT'
                 name = 'ModelSelect-{}'.format(classifier)
-                suffix = n_trials 
-                output_file = '{prefix}.P-{suffix}-{index}.{ext}'.format(prefix=name, suffix=suffix, index=index, ext=ext)
+                suffix = n_trials
+                output_file = '{prefix}.P-{suffix}-{index}.{ext}'.format(prefix=name, suffix=suffix, index=index,
+                                                                         ext=ext)
 
             output_path = os.path.join(output_path, output_file)  # example path: System.analysisPath
 
-            if verbose: print('(run_model_selection) Saving model-selection-comparison plot at: {path}'.format(path=output_path))
-            saveFig(plt, output_path, dpi=dpi, verbose=verbose) 
-        else: 
+            if verbose: print(
+                '(run_model_selection) Saving model-selection-comparison plot at: {path}'.format(path=output_path))
+            saveFig(plt, output_path, dpi=dpi, verbose=verbose)
+        else:
             plt.show()
-        
+
     return best_params, nested_scores
 
-# convenient wrapper for DT classifier 
+
+# convenient wrapper for DT classifier
 def classify(X, y, params={}, random_state=0, binary_outcome=True, **kargs):
     assert isinstance(params, dict)
 
@@ -365,7 +375,6 @@ def classify(X, y, params={}, random_state=0, binary_outcome=True, **kargs):
         balance_training = False
     else:
         balance_training = True
-
 
     if binary_outcome:
         # if balance_training:
@@ -386,7 +395,7 @@ def classify(X, y, params={}, random_state=0, binary_outcome=True, **kargs):
         cv_split = KFold(n_splits=10, shuffle=True, random_state=tree_seed)
 
     if xgb:
-        model.fit(X,y)
+        model.fit(X, y)
         return model
     else:
         # print('nan?', X.dtype)
@@ -399,7 +408,7 @@ def classify(X, y, params={}, random_state=0, binary_outcome=True, **kargs):
         leaf = False
         pruning = True
         if leaf:
-            leaf_search_space = np.append(np.array([0.05, 0.1, 0.2, 0.3, 0.4])*y.shape[0], 1).astype(int)
+            leaf_search_space = np.append(np.array([0.05, 0.1, 0.2, 0.3, 0.4]) * y.shape[0], 1).astype(int)
         else:
             leaf_search_space = [1]
         params_list = []
@@ -412,7 +421,7 @@ def classify(X, y, params={}, random_state=0, binary_outcome=True, **kargs):
             # print(path)
             ccp_alphas, impurities = path.ccp_alphas, path.impurities
             if pruning:
-                params_dict['ccp_alpha'] = ccp_alphas[:-1][ccp_alphas[:-1]>=0]
+                params_dict['ccp_alpha'] = ccp_alphas[:-1][ccp_alphas[:-1] >= 0]
             else:
                 params_dict['ccp_alpha'] = [0.0]
             params_list.append(params_dict)
@@ -426,16 +435,18 @@ def classify(X, y, params={}, random_state=0, binary_outcome=True, **kargs):
             final_tree.fit(X, y)
             return final_tree.best_estimator_
 
+
 def plot_parameters_chosen_histogram(params_name, params_list, outcome, path):
     unique_vals, counts = np.unique(params_list, return_counts=True)
-    counts = counts/sum(counts)
-    fig1, ax1 = plt.subplots(1,1)
+    counts = counts / sum(counts)
+    fig1, ax1 = plt.subplots(1, 1)
     ax1.bar(unique_vals, counts)
     ax1.set_xlabel('{}({})'.format(params_name, outcome))
     ax1.set_ylabel('Percentage')
     ax1.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
     fig1.savefig('{}/{}_params_distribution_{}.png'.format(path, params_name, outcome))
     # ax1.ylabel('proportion of parameters chosen')
+
 
 def score_collection(model, binary_outcome, X_train, y_train, X_test, y_test, scores_list):
     if binary_outcome:
@@ -460,20 +471,22 @@ def score_collection(model, binary_outcome, X_train, y_train, X_test, y_test, sc
 
     return scores_list
 
-def analyze_path(X, y, model=None, p_grid={}, feature_set=[], n_trials=100, n_trials_ms=10, save=False, output_path='', output_file='', 
-                             create_dir=True, index=0, binary_outcome=True,  **kargs):
+
+def analyze_path(X, y, model=None, p_grid={}, feature_set=[], n_trials=100, n_trials_ms=10, save=False, output_path='',
+                 output_file='',
+                 create_dir=True, index=0, binary_outcome=True, **kargs):
     # from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor 
-    from sklearn.model_selection import train_test_split # Import train_test_split function
+    from sklearn.model_selection import train_test_split  # Import train_test_split function
     from utils_tree import visualize, visualize_xgb, count_paths, count_paths2, count_features2, \
         get_feature_threshold_tree, count_paths_with_thres_sign, count_paths_with_thres_sign_from_xgb
     import time
-    
+
     #### parameters ####
     test_size = kargs.get('test_size', 0.2)
     verbose = kargs.get('verbose', False)
     merge_labels = kargs.get('merge_labels', True)
-    policy_count = kargs.get('policy_counts', 'standard') # options: {'standard', 'sample-based'}
-    experiment_id = kargs.get('experiment_id', 'test') # a file ID for the output (e.g. example decision tree)
+    policy_count = kargs.get('policy_counts', 'standard')  # options: {'standard', 'sample-based'}
+    experiment_id = kargs.get('experiment_id', 'test')  # a file ID for the output (e.g. example decision tree)
     validate_tree = kargs.get('validate_tree', True)
     plot_dir = kargs.get('plot_dir', '')
     plot_ext = kargs.get('plot_ext', 'tif')
@@ -483,14 +496,14 @@ def analyze_path(X, y, model=None, p_grid={}, feature_set=[], n_trials=100, n_tr
     xgb = kargs.get('xgb', False)
     fmap_fn = kargs.get('fmap_fn', 'fmap.txt')
     ####################
-    
+
     labels = np.unique(y)
     N, Nd = X.shape
-    
+
     if len(feature_set) == 0: feature_set = ['f%s' % i for i in range(Nd)]
-        
+
     msg = ''
-    if verbose: 
+    if verbose:
         msg += "(analyze_path) dim(X): {} | vars (n={}):\n...{}\n".format(X.shape, len(feature_set), feature_set)
         msg += "... class distribution: {}\n".format(collections.Counter(y))
     print(msg)
@@ -509,15 +522,15 @@ def analyze_path(X, y, model=None, p_grid={}, feature_set=[], n_trials=100, n_tr
     #       run_model_selection(X, y, model, p_grid=p_grid, n_trials=n_trials_ms, output_path=output_path, ext=plot_ext)
     #     the_index = np.argmax(nested_scores)
     #     the_params = best_params[np.argmax(nested_scores)]
-        # print('> type(best_params): {}:\n{}\n'.format(type(best_params), best_params))
-        
+    # print('> type(best_params): {}:\n{}\n'.format(type(best_params), best_params))
+
     # initiate data structures
     # TODO: count do not store
     paths = {}
     paths_threshold = {}
     paths_from = {}
     lookup = {}
-    counts = {f: [] for f in feature_set} # maps features to lists of thresholds
+    counts = {f: [] for f in feature_set}  # maps features to lists of thresholds
     model_list = []
     # build N different decision trees and compute their statistics (e.g. performance measures, decision path counts)
     # auc_scores = []
@@ -539,7 +552,8 @@ def analyze_path(X, y, model=None, p_grid={}, feature_set=[], n_trials=100, n_tr
         scores_rand_list = [[]]
     for i in range(n_trials):
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=i, stratify=stratify) # 70% training and 30% test
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=i,
+                                                            stratify=stratify)  # 70% training and 30% test
         # print("[{}] dim(X_test): {}".format(i, X_test.shape))
 
         # [todo]: how to reset a (trained) model?
@@ -553,16 +567,18 @@ def analyze_path(X, y, model=None, p_grid={}, feature_set=[], n_trials=100, n_tr
         """
         # y_pred = model.predict(X_test)
 
-        scores_list = score_collection(model=model, binary_outcome=binary_outcome, X_train=X_train,y_train=y_train,
+        scores_list = score_collection(model=model, binary_outcome=binary_outcome, X_train=X_train, y_train=y_train,
                                        y_test=y_test, X_test=X_test, scores_list=scores_list)
         # print('testing:\n', model.get_booster().get_dump(with_stats=True)[50])
         # shuffle training set
         for shuffle_seed in range(10):
             # np.random.shuffle(y_train)
             y_permutated_train = np.random.permutation(y_train)
-            model_rand = classify(X_train, y_permutated_train, params={}, random_state=i, binary_outcome=binary_outcome, xgb=xgb)
-            scores_rand_list = score_collection(model=model_rand, binary_outcome=binary_outcome, X_train=X_train, y_train=y_permutated_train,
-                                           y_test=y_test, X_test=X_test, scores_list=scores_rand_list)
+            model_rand = classify(X_train, y_permutated_train, params={}, random_state=i, binary_outcome=binary_outcome,
+                                  xgb=xgb)
+            scores_rand_list = score_collection(model=model_rand, binary_outcome=binary_outcome, X_train=X_train,
+                                                y_train=y_permutated_train,
+                                                y_test=y_test, X_test=X_test, scores_list=scores_rand_list)
 
         if i % 10 == 0:
             print('{}th run result finished!'.format(i))
@@ -578,42 +594,39 @@ def analyze_path(X, y, model=None, p_grid={}, feature_set=[], n_trials=100, n_tr
         else:
             paths, paths_threshold, paths_from = count_paths_with_thres_sign_from_xgb(estimator=model, paths=paths,
                                                                                       paths_from=paths_from, index=i,
-                                                                 feature_names=feature_set,
-                                                                 paths_threshold=paths_threshold,
-                                                                          multiple_counts=multiple_counts)
+                                                                                      feature_names=feature_set,
+                                                                                      paths_threshold=paths_threshold,
+                                                                                      multiple_counts=multiple_counts)
             if multiple_counts:
                 max_count += len(model.get_booster().get_dump())
             else:
                 max_count += 1
     # if xgb is False:
     list_params = {
-               'min_sample_leaf': list_min_sample_leaf,
-               'ccp_alpha': list_ccp_alpha,
-                'max_count': max_count
-               }
+        'min_sample_leaf': list_min_sample_leaf,
+        'ccp_alpha': list_ccp_alpha,
+        'max_count': max_count
+    }
     # for k, v in list_params.items():
     #     plot_parameters_chosen_histogram(params_name=k, params_list=v, outcome=outcome, path=outputDir)
     # print("before summary:", paths)
 
     sorted_paths = summarize_paths(paths)
 
-
     paths_median_threshold = get_median_of_paths_threshold(paths_threshold)
     # topk = len(sorted_paths)
     topk = 10
 
-
-    topk_profile_str, all_greater_path = topk_profile_with_its_threshold(sorted_paths, paths_median_threshold, topk=topk)
+    topk_profile_str, all_greater_path = topk_profile_with_its_threshold(sorted_paths, paths_median_threshold,
+                                                                         topk=topk)
     all_greater_path_fn = os.path.join(plot_dir, '{}_all_greater_paths.csv'.format(outcome_name))
     all_greater_path_df = pd.DataFrame({'profile_name': [k for k, v in all_greater_path.items()],
-                                       'count': [v for k, v in all_greater_path.items()]})
+                                        'count': [v for k, v in all_greater_path.items()]})
     all_greater_path_df.to_csv(all_greater_path_fn, index=False)
-    return  {'scores': scores_list,
-                                    'scores_random': scores_rand_list}, list_params, \
-            topk_profile_str, sorted_paths, paths_median_threshold, \
-            {'paths_from': paths_from, 'model_list': model_list}
-
-
+    return {'scores': scores_list,
+            'scores_random': scores_rand_list}, list_params, \
+           topk_profile_str, sorted_paths, paths_median_threshold, \
+           {'paths_from': paths_from, 'model_list': model_list}
 
 
 def load_data(input_file, **kargs):
@@ -632,7 +645,8 @@ def load_data(input_file, **kargs):
     import collections
     import data_processor as dproc
 
-    X, y, features = dproc.load_data(input_path=dataDir, input_file=input_file, sep=',') # other params: input_path/None
+    X, y, features = dproc.load_data(input_path=dataDir, input_file=input_file,
+                                     sep=',')  # other params: input_path/None
 
     print("(load_data) dim(X): {}, sample_size: {}".format(X.shape, X.shape[0]))
 
@@ -641,6 +655,7 @@ def load_data(input_file, **kargs):
     print("... variables: {}".format(features))
 
     return X, y, features
+
 
 def get_median_of_threshold(counts):
     features_median_threshold = {}
@@ -655,6 +670,7 @@ def get_median_of_threshold(counts):
             print("# threshold value: {}".format(np_thres_list.shape))
     return features_median_threshold
 
+
 def get_median_of_paths_threshold(paths_thres):
     paths_median_threshold = {}
     for path, threshold_list in paths_thres.items():
@@ -662,17 +678,18 @@ def get_median_of_paths_threshold(paths_thres):
         paths_median_threshold[path] = np.median(np.array(threshold_list), axis=0)
     return paths_median_threshold
 
+
 def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\t"):
     topk_profile_with_value_str = []
     all_greater_path = {}
     for k, (path, count) in enumerate(sorted_paths):
-    # for k, (path, count) in enumerate(sorted_paths):
+        # for k, (path, count) in enumerate(sorted_paths):
         greater_ = True
         profile_str = ""
         if count > 10:
             for idx, pollutant in enumerate(path.split(sep)):
                 # print()
-                profile_str += "{}{}{:.3e}{}".format(sep,pollutant, paths_thres[path][idx], sep)
+                profile_str += "{}{}{:.3e}{}".format(sep, pollutant, paths_thres[path][idx], sep)
             # plot_histogram(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
             # plot_scatter(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
             # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
@@ -685,11 +702,11 @@ def topk_profile_with_its_threshold(sorted_paths, paths_thres, topk, sep="\t"):
                 # print(print_str)
                 all_greater_path[profile_str] = count
 
-
         # else:
         #     break
     return topk_profile_with_value_str, all_greater_path
     # print("> Top {} paths (overall):\n{}\n".format(topk, sorted_paths[:topk]))
+
 
 def draw_xgb_tree(test_size, split_idx, tree_dir,
                   visualize_dict, outcome_dir, fmap_fn, booster_idx, labels, count, X, y):
@@ -719,15 +736,19 @@ def draw_xgb_tree(test_size, split_idx, tree_dir,
 
 
 import math
-def nCr(n,r):
+
+
+def nCr(n, r):
     f = math.factorial
-    return f(n) / f(r) / f(n-r)
+    return f(n) / f(r) / f(n - r)
+
 
 def powerset(s):
     x = len(s)
     masks = [1 << i for i in range(x)]
     for i in range(1 << x):
         yield [ss for mask, ss in zip(masks, s) if i & mask]
+
 
 def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, sep='\t'):
     profile_indicator = np.ones((X.shape[0]))
@@ -739,7 +760,6 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
     #     combs = nCr(number_pollutants, r)
     #     for j in range(combs):
     #         pollutants_interactions.append(np.ones((X.shape[0], number_pollutants)))
-
 
     node_list = []
     neg_value = 0
@@ -764,7 +784,7 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
             joined_str = '_and_'.join(pe)
             pe_array = np.ones((X.shape[0]))
             for element in pe:
-                pe_array = pe_array*(p_df[element].values)
+                pe_array = pe_array * (p_df[element].values)
             pset_pollutant_dict[joined_str] = pe_array
 
     interactions_df = pd.DataFrame(pset_pollutant_dict)
@@ -773,9 +793,11 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
     # profile_indicators = 2*profile_indicators - 1
     # interactions_df = 2*interactions_df - 1
 
-    return {'comb':profile_indicator,
+    return {'comb': profile_indicator,
             'pollutants_df': pd.DataFrame(pollutants_indicators, columns=node_list),
             'interactions_df': interactions_df}
+
+
 #
 # def plot_scores_hist()
 
@@ -783,6 +805,7 @@ def summarize_paths(paths):
     print("> 1. Frequent decision paths overall ...")
     sorted_paths = sorted(paths.items(), key=operator.itemgetter(1), reverse=True)
     return sorted_paths
+
 
 def runWorkflow(**kargs):
     from utils_tree import visualize, visualize_xgb
@@ -822,27 +845,25 @@ def runWorkflow(**kargs):
     ######################################################
     file_prefix = input_file.split('.')[0]
 
-
-
     confounding_vars = ['age', 'avg_income',
-                       # 'race'
-                       # 'Race_Asian',
-                       # 'Race_Black or African American',
-                       # 'Race_More Than One Race',
-                       # 'Race_Native Hawaiian or Other Pacific Islander',
-                       # 'Race_Unknown / Not Reported',
-                       # 'Race_White',
+                        # 'race'
+                        # 'Race_Asian',
+                        # 'Race_Black or African American',
+                        # 'Race_More Than One Race',
+                        # 'Race_Native Hawaiian or Other Pacific Islander',
+                        # 'Race_Unknown / Not Reported',
+                        # 'Race_White',
                         'race/ethnicity_Asian',
                         'race/ethnicity_Black or African American',
                         'race/ethnicity_Hispanic or Latino',
                         'race/ethnicity_More Than One Race',
                         'race/ethnicity_Unknown / Not Reported',
                         'race/ethnicity_White',
-                       'gender',
-                       ]
+                        'gender',
+                        ]
     # exclude_vars = ['Gender', 'Zip Code'] + confounding_vars
     exclude_vars = confounding_vars + [
-                        "ID",
+        "ID",
     ]
 
     """
@@ -850,11 +871,11 @@ def runWorkflow(**kargs):
     """
 
     X, y, features, confounders_df, whole_df = load_data(input_path=dataDir,
-                                               input_file=input_file,
-                                               exclude_vars=exclude_vars,
-                                               # col_target='Outcome',
-                                               confounding_vars=confounding_vars,
-                                               verbose=True)
+                                                         input_file=input_file,
+                                                         exclude_vars=exclude_vars,
+                                                         # col_target='Outcome',
+                                                         confounding_vars=confounding_vars,
+                                                         verbose=True)
 
     # 2. define model (e.g. decision tree)
     if verbose: print("(runWorkflow) 2. Define model (e.g. decision tree and its parameters) ...")
@@ -887,28 +908,30 @@ def runWorkflow(**kargs):
 
         fmap_fn = features_to_txt(features)
         scores, list_params, topk_profile_str, sorted_paths, paths_median_threshold, visualize_dict = \
-             analyze_path(X, y, model=model, p_grid=p_grid, feature_set=features, n_trials=100, n_trials_ms=30, save=False,
-                            merge_labels=False, policy_count='standard', experiment_id=file_prefix,
-                               create_dir=True, index=0, validate_tree=False, to_str=True, verbose=False, binary_outcome=binary_outcome,
-                          fmap_fn=fmap_fn, plot_dir=plotDir,
-                          outcome_name=outcome_folder_name, xgb=xgb)
+            analyze_path(X, y, model=model, p_grid=p_grid, feature_set=features, n_trials=100, n_trials_ms=30,
+                         save=False,
+                         merge_labels=False, policy_count='standard', experiment_id=file_prefix,
+                         create_dir=True, index=0, validate_tree=False, to_str=True, verbose=False,
+                         binary_outcome=binary_outcome,
+                         fmap_fn=fmap_fn, plot_dir=plotDir,
+                         outcome_name=outcome_folder_name, xgb=xgb)
 
-        scores_df = pd.DataFrame({'f_minority':scores['scores'][0],
-                                # 'f_minority_rand': scores['scores_random'][0],
-                                'f_majority': scores['scores'][1],
-                                # 'f_majority_rand': scores['scores_random'][1],
-                                'auc': scores['scores'][2],
-                                # 'auc_rand': scores['scores_random'][2]
+        scores_df = pd.DataFrame({'f_minority': scores['scores'][0],
+                                  # 'f_minority_rand': scores['scores_random'][0],
+                                  'f_majority': scores['scores'][1],
+                                  # 'f_majority_rand': scores['scores_random'][1],
+                                  'auc': scores['scores'][2],
+                                  # 'auc_rand': scores['scores_random'][2]
                                   })
         scores_df.to_csv(os.path.join(outcome_dir, 'scores_df.csv'))
         scores_rand_df = pd.DataFrame({
-                                    # 'f_minority': scores['scores'][0],
-                                  'f_minority_rand': scores['scores_random'][0],
-                                  # 'f_majority': scores['scores'][1],
-                                  'f_majority_rand': scores['scores_random'][1],
-                                  # 'auc': scores['scores'][2],
-                                  'auc_rand': scores['scores_random'][2]
-                                    })
+            # 'f_minority': scores['scores'][0],
+            'f_minority_rand': scores['scores_random'][0],
+            # 'f_majority': scores['scores'][1],
+            'f_majority_rand': scores['scores_random'][1],
+            # 'auc': scores['scores'][2],
+            'auc_rand': scores['scores_random'][2]
+        })
         scores_rand_df.to_csv(os.path.join(outcome_dir, 'scores_rand_df.csv'))
 
         """
@@ -931,15 +954,14 @@ def runWorkflow(**kargs):
             #     break
             if profile_occurrence > 10:
                 profile_dict = profile_indicator_function(path=profile,
-                                                            feature_idx=feature_idx_dict,
-                                                            path_threshold=paths_median_threshold[profile],
-                                                            X=X, sign_pair=sign_pair
-                                                            )
+                                                          feature_idx=feature_idx_dict,
+                                                          path_threshold=paths_median_threshold[profile],
+                                                          X=X, sign_pair=sign_pair
+                                                          )
                 binary_profile = np.array(profile_dict['comb'])
-                print(profile,' pos_count :', sum(binary_profile==1), 'out of ', binary_profile.shape[0])
+                print(profile, ' pos_count :', sum(binary_profile == 1), 'out of ', binary_profile.shape[0])
                 profile_df = pd.DataFrame({topk_profile_str[idx]: binary_profile})
                 regression_x_df = pd.concat([profile_df, confounders_df], axis=1)
-
 
                 all_equal_drop_col = []
                 for col in regression_x_df:
@@ -979,11 +1001,8 @@ def runWorkflow(**kargs):
                         regressor_with_confounders = sm.OLS(y, regression_x_df_drop)
                         result = regressor_with_confounders.fit()
 
-
-
                 result_summary = result.summary()
                 print(result_summary)
-
 
                 """
                 Since pvalue cannot be shown in scientific notation by simply as_csv(),
@@ -992,9 +1011,7 @@ def runWorkflow(**kargs):
                 profile_coef = result.params.values[0]
                 p_val = result.pvalues.values[0]
 
-                """
-                
-                """
+
 
                 interactions_df = profile_dict['interactions_df']
                 interactions = interactions_df.columns
@@ -1014,7 +1031,7 @@ def runWorkflow(**kargs):
                         X_corr = np.corrcoef(X_np, rowvar=0)
                         # print(X_corr)
                         w, v = np.linalg.eig(X_corr)
-                        print('{} eigenvalues: {}'.format(profile, w))
+                        # print('{} eigenvalues: {}'.format(profile, w))
                         # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
                         regression_p_df_drop['intercept'] = 1.0
                         if binary_outcome:
@@ -1037,7 +1054,7 @@ def runWorkflow(**kargs):
                             result_p = regressor_with_confounders.fit()
 
                     p_val_int = result_p.pvalues.values[0]
-
+                    interactions_pv.append(p_val_int)
 
                 params = result.params
                 conf = result.conf_int()
@@ -1054,7 +1071,6 @@ def runWorkflow(**kargs):
                     path_from = visualize_dict['paths_from'][p]
                     random.Random(8964).shuffle(path_from)
                     p_name = '_and_'.join(p.split('\t'))
-
 
                     # TODO:change to plot tree_with as much profiles (single and all_greater?)
                     profile_group = ''
@@ -1076,7 +1092,7 @@ def runWorkflow(**kargs):
                         # print(topk_profile_str[idx])
 
                         profile_condition = table_draw_tree_df.loc[profile_table_bool & outcome_table_bool,
-                                                               'table']
+                                                                   'table']
                         #
 
                         if profile_condition.all():
@@ -1100,24 +1116,25 @@ def runWorkflow(**kargs):
                                     # print(path_array)
                                     tree_counts[(split_idx, booster_idx)] = (old_count + 1, path_array)
 
-                if (sign_pair[0] in topk_profile_str[idx] and sign_pair[1] in topk_profile_str[idx]) or profile_coef == 0:
+                if (sign_pair[0] in topk_profile_str[idx] and sign_pair[1] in topk_profile_str[
+                    idx]) or profile_coef == 0:
                     relation_dir = possibleDirs[-1]
-                elif (sign_pair[0] in topk_profile_str[idx] and profile_coef < 0) or (sign_pair[1] in topk_profile_str[idx] and profile_coef > 0):
+                elif (sign_pair[0] in topk_profile_str[idx] and profile_coef < 0) or (
+                        sign_pair[1] in topk_profile_str[idx] and profile_coef > 0):
                     relation_dir = possibleDirs[0]
-                elif (sign_pair[0] in topk_profile_str[idx] and profile_coef > 0) or (sign_pair[1] in topk_profile_str[idx] and profile_coef < 0):
+                elif (sign_pair[0] in topk_profile_str[idx] and profile_coef > 0) or (
+                        sign_pair[1] in topk_profile_str[idx] and profile_coef < 0):
                     relation_dir = possibleDirs[1]
 
                 result_dir = os.path.join(relation_dir, file_prefix)
 
-
-
-                    # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
+                # plot_hist2d(asthma_df, result_dir, pollutant_name=pollutant.strip('<=').strip('>'), thres=paths_thres[path][idx])
 
                 out_path = os.path.join(result_dir, "occur_{}_{}_coef_{:.3e}_pval={:.3e}.csv".format(profile_occurrence,
-                                                                                                 topk_profile_str[idx],
-                                                                                            profile_coef,
-                                                                                         p_val))
-
+                                                                                                     topk_profile_str[
+                                                                                                         idx],
+                                                                                                     profile_coef,
+                                                                                                     p_val))
 
                 if not os.path.exists(result_dir):
                     os.mkdir(result_dir)
@@ -1136,22 +1153,22 @@ def runWorkflow(**kargs):
                     profile_counter += 1
                     cols = p_val_df.columns
                     p_val_df = p_val_df.append({cols[0]: topk_profile_str[idx],
-                                     cols[1]: outcome_folder_name,
-                                     cols[2]: p_val,
-                                     cols[3]: relation_dir.split('/')[-1],
-                                     cols[4]: profile_coef,
-                                     cols[5]: conf_df[0],
-                                     cols[6]: conf_df[1],
-                                     cols[7]: profile_occurrence,
-                                    cols[8]: sum(binary_profile == 1),
-                                    cols[9]: sum(binary_profile == -1),
-                                    cols[10]: binary_outcome,
-                                    cols[11]: list_params['max_count'],
-                                    cols[12]: interactions_pv,
-                                    cols[13]: interactions
-                                    # cols[9]: np.mean(np.array(scores)),
-                                    # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
-                                    }, ignore_index=True)
+                                                cols[1]: outcome_folder_name,
+                                                cols[2]: p_val,
+                                                cols[3]: relation_dir.split('/')[-1],
+                                                cols[4]: profile_coef,
+                                                cols[5]: conf_df[0],
+                                                cols[6]: conf_df[1],
+                                                cols[7]: profile_occurrence,
+                                                cols[8]: sum(binary_profile == 1),
+                                                cols[9]: sum(binary_profile == -1),
+                                                cols[10]: binary_outcome,
+                                                cols[11]: list_params['max_count'],
+                                                cols[12]: interactions_pv,
+                                                cols[13]: interactions
+                                                # cols[9]: np.mean(np.array(scores)),
+                                                # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
+                                                }, ignore_index=True)
     # max_count = max([v[0] for k, v in tree_counts.items()])
     # path_double_counted = []
     # total_path_in_table = sum(table_draw_tree_df.loc[outcome_table_bool, 'table'])
@@ -1185,7 +1202,7 @@ def runWorkflow(**kargs):
 
     print('Finished All regressions!')
 
-        # if len(p_val_df['outcome']==output_folder_name) == 0:
+    # if len(p_val_df['outcome']==output_folder_name) == 0:
     if binary_outcome:
         f_minority = scores['scores'][0]
         f_minority_rand = scores['scores_random'][0]
@@ -1211,46 +1228,49 @@ def runWorkflow(**kargs):
         min_sl = scipy.stats.mode(np.array(list_params['min_sample_leaf']))[0][0]
     test_cols = test_score_df.columns
     test_score_df = test_score_df.append({
-                                test_cols[0]: outcome_folder_name,
-                                test_cols[1]: binary_outcome,
-                                test_cols[2]: min_sl,
-                                test_cols[3]: yr_name,
+        test_cols[0]: outcome_folder_name,
+        test_cols[1]: binary_outcome,
+        test_cols[2]: min_sl,
+        test_cols[3]: yr_name,
         'mean (std) r2 score from random predictors': '{:.3e}({:.3e})'.format(np.mean(r2_rand), np.std(r2_rand)),
         'mean (std) r2 score': '{:.3e}({:.3e})'.format(np.mean(r2), np.std(r2)),
-        'mean (std) f score (minority) from random predictors': '{:.3e}({:.3e})'.format(np.mean(f_minority_rand), np.std(f_minority_rand)),
+        'mean (std) f score (minority) from random predictors': '{:.3e}({:.3e})'.format(np.mean(f_minority_rand),
+                                                                                        np.std(f_minority_rand)),
         'mean (std) f score (minority)': '{:.3e}({:.3e})'.format(np.mean(f_minority), np.std(f_minority)),
-        'mean (std) f score (majority) from random predictors': '{:.3e}({:.3e})'.format(np.mean(f_majority_rand), np.std(f_majority_rand)),
+        'mean (std) f score (majority) from random predictors': '{:.3e}({:.3e})'.format(np.mean(f_majority_rand),
+                                                                                        np.std(f_majority_rand)),
         'mean (std) f score (majority)': '{:.3e}({:.3e})'.format(np.mean(f_majority), np.std(f_majority)),
         'mean (std) AUC score from random predictors': '{:.3e}({:.3e})'.format(np.mean(auc_rand), np.std(auc_rand)),
         'mean (std) AUC score': '{:.3e}({:.3e})'.format(np.mean(auc), np.std(auc)),
-                                test_cols[-1]: X.shape[0],
-                                }, ignore_index=True)
+        test_cols[-1]: X.shape[0],
+    }, ignore_index=True)
 
     return p_val_df, test_score_df
+
 
 if __name__ == "__main__":
     # file_format = 'act_score_7pollutants_no_impute_*.csv'
     # binary_out = False if 'True' != sys.argv[-2] else True
     outcome_binary_dict = {
-                            # 'asthma': True,
-                            # 'asthma(act_score)':False,
-                            # 'age_greaterthan5_diagnosed_asthma': True,
-                            # 'age_diagnosed_asthma': False,
-                            'daily_controller_past6months': True,
-                            'emergency_dept': True,
-                            # 'emergency_dept_pastyr_count': False,
-                            'hospitalize_overnight': True,
-                            # 'hospitalize_overnight_pastyr_count': False,
-                            # 'regular_asthma_symptoms_past6months': True,
-                           # 'regular_asthma_symptoms_daysCount_pastWeek': False
-                           #  'asthma(act_score_lessthan20)': True,
-                           #  'emergency_dept_pastyr_count(greaterthan0)': True,
-                           #  'emergency_dept_pastyr_count(greaterthan_nz_median)': True,
-                           #  'hospitalize_overnight_pastyr_count(greaterthan0)': True,
-                           #  'hospitalize_overnight_pastyr_count(greaterthan_nz_median)': True,
-                           #  'regular_asthma_symptoms_daysCount_pastWeek(greaterthan0)': True,
-                           #  'regular_asthma_symptoms_daysCount_pastWeek(greaterthan_nz_median)': True
-                           }
+        # 'asthma': True,
+        # 'asthma(act_score)':False,
+        # 'age_greaterthan5_diagnosed_asthma': True,
+        # 'age_diagnosed_asthma': False,
+        'daily_controller_past6months': True,
+        'emergency_dept': True,
+        # 'emergency_dept_pastyr_count': False,
+        'hospitalize_overnight': True,
+        # 'hospitalize_overnight_pastyr_count': False,
+        # 'regular_asthma_symptoms_past6months': True,
+        # 'regular_asthma_symptoms_daysCount_pastWeek': False
+        #  'asthma(act_score_lessthan20)': True,
+        #  'emergency_dept_pastyr_count(greaterthan0)': True,
+        #  'emergency_dept_pastyr_count(greaterthan_nz_median)': True,
+        #  'hospitalize_overnight_pastyr_count(greaterthan0)': True,
+        #  'hospitalize_overnight_pastyr_count(greaterthan_nz_median)': True,
+        #  'regular_asthma_symptoms_daysCount_pastWeek(greaterthan0)': True,
+        #  'regular_asthma_symptoms_daysCount_pastWeek(greaterthan_nz_median)': True
+    }
 
     # suffix = 'nbt_xgb_multiple_counts'
     outcome = sys.argv[-2]
@@ -1287,8 +1307,9 @@ if __name__ == "__main__":
     if not os.path.exists(plotDir):
         os.mkdir(plotDir)
     pvalue_df = pd.DataFrame(columns=['profile', 'outcome', 'p_val', 'relation',
-                                      'coef', 'coef_95CI_lower', 'coef_95CI_upper','freq', 'pos_count', 'neg_count', 'binary_outcome',
-                                      'max_count','interaction_p_vals', 'interactions_combs'
+                                      'coef', 'coef_95CI_lower', 'coef_95CI_upper', 'freq', 'pos_count', 'neg_count',
+                                      'binary_outcome',
+                                      'max_count', 'interaction_p_vals', 'interactions_combs'
 
                                       ])
     pred_score_df = pd.DataFrame(columns=['outcome', 'binary_outcome', 'mode of min_samples_of_leaf', 'year from',
@@ -1310,14 +1331,14 @@ if __name__ == "__main__":
     else:
         year_name_detail = yr_name + str(yr_f)
     pvalue_df, pred_score_df = runWorkflow(input_file=file,
-                            # binary_outcome=binary_out,
-                            output_folder_name=outcome,
-                            p_val_df=pvalue_df,
-                            yr_name=year_name_detail,
-                            test_score_df = pred_score_df,
-                            xgb=xgb_predict
-                            # outcome_name = outcome
-                            )
+                                           # binary_outcome=binary_out,
+                                           output_folder_name=outcome,
+                                           p_val_df=pvalue_df,
+                                           yr_name=year_name_detail,
+                                           test_score_df=pred_score_df,
+                                           xgb=xgb_predict
+                                           # outcome_name = outcome
+                                           )
     # print('before dropped', pvalue_df.shape)
     pvalue_df.dropna(axis=0, how='any', inplace=True)
 
