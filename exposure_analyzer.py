@@ -1034,7 +1034,7 @@ def runWorkflow(**kargs):
                         w, v = np.linalg.eig(X_corr)
                         # print('{} eigenvalues: {}'.format(profile, w))
                         # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
-                        regression_p_df_drop['intercept'] = 1.0
+                        # regression_p_df_drop['intercept'] = 1.0
                         if binary_outcome:
                             regressor_with_confounders = sm.Logit(y, regression_p_df_drop, method='bfgs')
                         else:
@@ -1045,7 +1045,7 @@ def runWorkflow(**kargs):
 
                     except Exception as inst:
 
-                        regression_p_df_drop['intercept'] = 1.0
+                        # regression_p_df_drop['intercept'] = 1.0
                         print('throwing to exception')
                         if binary_outcome:
                             regressor_with_confounders = sm.Logit(y, regression_p_df_drop, method='bfgs')
