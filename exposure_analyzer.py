@@ -789,12 +789,12 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
 
     interactions_df = pd.DataFrame(pset_pollutant_dict)
 
-    # profile_indicator = 2*profile_indicator - 1
-    # profile_indicators = 2*profile_indicators - 1
-    # interactions_df = 2*interactions_df - 1
+    profile_indicator = 2*profile_indicator - 1
+    p_df = 2*p_df - 1
+    interactions_df = 2*interactions_df - 1
 
     return {'comb': profile_indicator,
-            'pollutants_df': pd.DataFrame(pollutants_indicators, columns=node_list),
+            'pollutants_df': p_df,
             'interactions_df': interactions_df}
 
 
