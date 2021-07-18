@@ -777,21 +777,26 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
 
     p_df = pd.DataFrame(pollutants_indicators, columns=node_list)
     pset_pollutant = powerset(node_list)
+    if number_pollutants > 1:
+        pset_pollutant_dict = {}
+        for pe in pset_pollutant:
+            if (len(pe) > 1):
+                joined_str = '_and_'.join(pe)
+                pe_array = np.ones((X.shape[0]))
+                for element in pe:
+                    pe_array = pe_array * (p_df[element].values)
+                pset_pollutant_dict[joined_str] = pe_array
 
-    pset_pollutant_dict = {}
-    for pe in pset_pollutant:
-        if (len(pe) > 1):
-            joined_str = '_and_'.join(pe)
-            pe_array = np.ones((X.shape[0]))
-            for element in pe:
-                pe_array = pe_array * (p_df[element].values)
-            pset_pollutant_dict[joined_str] = pe_array
-
-    interactions_df = pd.DataFrame(pset_pollutant_dict)
+        interactions_df = pd.DataFrame(pset_pollutant_dict)
+        interactions_df = 2 * interactions_df - 1
+    else:
+        interactions_df = None
 
     profile_indicator = 2*profile_indicator - 1
     p_df = 2*p_df - 1
-    interactions_df = 2*interactions_df - 1
+
+    print(p_df)
+    print(interactions_df)
 
     return {'comb': profile_indicator,
             'pollutants_df': p_df,
@@ -1014,50 +1019,54 @@ def runWorkflow(**kargs):
 
 
                 interactions_df = profile_dict['interactions_df']
-                interactions = interactions_df.columns
                 interactions_pv = []
-                # interactions_or =
-                for interaction in interactions:
-                    print(interaction)
-                    regression_pollutants_df = pd.concat([interactions_df[[interaction]],
-                                                          profile_dict['pollutants_df'],
-                                                          confounders_df], axis=1)
-                    regression_p_df_drop = regression_pollutants_df.drop(all_equal_drop_col, axis=1)
-                    from sklearn.preprocessing import StandardScaler
-                    scaler = StandardScaler()
-                    regression_p_df_drop[:] = scaler.fit_transform(regression_p_df_drop)
+                interactions = []
+                if not(interactions_df is None):
+                    interactions = interactions_df.columns
 
-                    try:
-                        X_np = np.array(regression_p_df_drop)
-                        X_corr = np.corrcoef(X_np, rowvar=0)
-                        # print(X_corr)
-                        w, v = np.linalg.eig(X_corr)
-                        # print('{} eigenvalues: {}'.format(profile, w))
-                        # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
-                        # regression_p_df_drop['intercept'] = 1.0
-                        if binary_outcome:
-                            regressor_with_confounders = sm.Logit(y, regression_p_df_drop, method='bfgs')
-                        else:
-                            regressor_with_confounders = sm.OLS(y, regression_p_df_drop)
+                    # interactions_or =
 
-                        # result = regressor_with_confounders.fit(skip_hessian=True)
-                        result_p = regressor_with_confounders.fit()
+                    for interaction in interactions:
+                        print(interaction)
+                        regression_pollutants_df = pd.concat([interactions_df[[interaction]],
+                                                              profile_dict['pollutants_df'],
+                                                              confounders_df], axis=1)
+                        regression_p_df_drop = regression_pollutants_df.drop(all_equal_drop_col, axis=1)
+                        from sklearn.preprocessing import StandardScaler
+                        scaler = StandardScaler()
+                        regression_p_df_drop[:] = scaler.fit_transform(regression_p_df_drop)
 
-                    except Exception as inst:
+                        try:
+                            X_np = np.array(regression_p_df_drop)
+                            X_corr = np.corrcoef(X_np, rowvar=0)
+                            # print(X_corr)
+                            w, v = np.linalg.eig(X_corr)
+                            # print('{} eigenvalues: {}'.format(profile, w))
+                            # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
+                            # regression_p_df_drop['intercept'] = 1.0
+                            if binary_outcome:
+                                regressor_with_confounders = sm.Logit(y, regression_p_df_drop, method='bfgs')
+                            else:
+                                regressor_with_confounders = sm.OLS(y, regression_p_df_drop)
 
-                        # regression_p_df_drop['intercept'] = 1.0
-                        print('throwing to exception')
-                        if binary_outcome:
-                            regressor_with_confounders = sm.Logit(y, regression_p_df_drop, method='bfgs')
-                            result_p = regressor_with_confounders.fit_regularized(alpha=1e-7)
-                        else:
-                            regressor_with_confounders = sm.OLS(y, regression_p_df_drop)
+                            # result = regressor_with_confounders.fit(skip_hessian=True)
                             result_p = regressor_with_confounders.fit()
-                    # result_summary = result.summary()
-                    print(result_p.summary)
 
-                    p_val_int = result_p.pvalues.values[0]
-                    interactions_pv.append(p_val_int)
+                        except Exception as inst:
+
+                            # regression_p_df_drop['intercept'] = 1.0
+                            print('throwing to exception')
+                            if binary_outcome:
+                                regressor_with_confounders = sm.Logit(y, regression_p_df_drop, method='bfgs')
+                                result_p = regressor_with_confounders.fit_regularized(alpha=1e-7)
+                            else:
+                                regressor_with_confounders = sm.OLS(y, regression_p_df_drop)
+                                result_p = regressor_with_confounders.fit()
+                        # result_summary = result.summary()
+                        print(result_p.summary)
+
+                        p_val_int = result_p.pvalues.values[0]
+                        interactions_pv.append(p_val_int)
 
                 params = result.params
                 conf = result.conf_int()
