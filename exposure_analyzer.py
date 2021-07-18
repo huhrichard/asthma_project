@@ -972,8 +972,8 @@ def runWorkflow(**kargs):
 
                 regression_x_df_drop = regression_x_df.drop(all_equal_drop_col, axis=1)
                 from sklearn.preprocessing import StandardScaler
-                scaler = StandardScaler().fit(regression_x_df_drop)
-                regression_x_df_drop[:] = scaler.transform(regression_x_df_drop)
+                scaler = StandardScaler()
+                regression_x_df_drop[:] = scaler.fit_transform(regression_x_df_drop)
                 try:
                     X_np = np.array(regression_x_df_drop)
                     X_corr = np.corrcoef(X_np, rowvar=0)
@@ -1018,13 +1018,14 @@ def runWorkflow(**kargs):
                 interactions_pv = []
                 # interactions_or =
                 for interaction in interactions:
+                    print(interaction)
                     regression_pollutants_df = pd.concat([interactions_df[[interaction]],
                                                           profile_dict['pollutants_df'],
                                                           confounders_df], axis=1)
                     regression_p_df_drop = regression_pollutants_df.drop(all_equal_drop_col, axis=1)
                     from sklearn.preprocessing import StandardScaler
-                    scaler = StandardScaler().fit(regression_p_df_drop)
-                    regression_p_df_drop[:] = scaler.transform(regression_p_df_drop)
+                    scaler = StandardScaler()
+                    regression_p_df_drop[:] = scaler.fit_transform(regression_p_df_drop)
 
                     try:
                         X_np = np.array(regression_p_df_drop)
