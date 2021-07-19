@@ -789,10 +789,10 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
 
         interactions_df = pd.DataFrame(pset_pollutant_dict)
         if interactions_df.shape[1] == 1:
-            multi = np.array([interactions_df.values]).T
+            multi = np.array([interactions_df.values])
         else:
-            multi = interactions_df.values.T
-        print(np.matmul(pollutants_indicators, multi))
+            multi = interactions_df.values
+        print(np.matmul(pollutants_indicators.T, multi))
         interactions_df = 2 * interactions_df - 1
     else:
         interactions_df = None
