@@ -777,6 +777,7 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
 
     p_df = pd.DataFrame(pollutants_indicators, columns=node_list)
     pset_pollutant = powerset(node_list)
+    completely_same = []
     if number_pollutants > 1:
         pset_pollutant_dict = {}
         for pe in pset_pollutant:
@@ -788,6 +789,8 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
                 for element in pe:
                     diff = sum(p_df[element].values - pe_array)
                     print(joined_str, element, ' diff: ' , diff)
+                    if diff == 0:
+                        completely_same.append([joined_str, element])
 
                 pset_pollutant_dict[joined_str] = pe_array
 
@@ -805,7 +808,9 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
 
     return {'comb': profile_indicator,
             'pollutants_df': p_df,
-            'interactions_df': interactions_df}
+            'interactions_df': interactions_df,
+            'identical_profiles': completely_same
+            }
 
 
 #
@@ -1026,14 +1031,21 @@ def runWorkflow(**kargs):
                 interactions_df = profile_dict['interactions_df']
                 interactions_pv = []
                 interactions = []
-                if p_val < 0.05:
-                    if not(interactions_df is None):
-                        interactions = interactions_df.columns
+                identical_to_single = profile_dict['identical_profiles']
+                # if p_val < 0.05:
+                if not(interactions_df is None):
+                    interactions = interactions_df.columns
 
-                        # interactions_or =
+                    # interactions_or =
 
-                        for interaction in interactions:
-                            print(interaction)
+                    for interaction in interactions:
+                        print(interaction)
+                        skip_bool = False
+                        for identical in identical_to_single:
+                            if interaction == identical[0]:
+                                skip_bool = True
+
+                        if skip_bool == False:
                             regression_pollutants_df = pd.concat([interactions_df[[interaction]],
                                                                   profile_dict['pollutants_df'],
                                                                   confounders_df], axis=1)
@@ -1183,7 +1195,8 @@ def runWorkflow(**kargs):
                                                 cols[10]: binary_outcome,
                                                 cols[11]: list_params['max_count'],
                                                 cols[12]: interactions_pv,
-                                                cols[13]: interactions
+                                                cols[13]: interactions,
+                                                cols[14]: identical_to_single
                                                 # cols[9]: np.mean(np.array(scores)),
                                                 # cols[10]: scipy.stats.mode(np.array(min_number_leaf))[0],
                                                 }, ignore_index=True)
@@ -1327,7 +1340,7 @@ if __name__ == "__main__":
     pvalue_df = pd.DataFrame(columns=['profile', 'outcome', 'p_val', 'relation',
                                       'coef', 'coef_95CI_lower', 'coef_95CI_upper', 'freq', 'pos_count', 'neg_count',
                                       'binary_outcome',
-                                      'max_count', 'interaction_p_vals', 'interactions_combs'
+                                      'max_count', 'interaction_p_vals', 'interactions_combs', 'identical_profiles_pollutants'
 
                                       ])
     pred_score_df = pd.DataFrame(columns=['outcome', 'binary_outcome', 'mode of min_samples_of_leaf', 'year from',
