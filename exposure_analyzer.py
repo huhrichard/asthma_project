@@ -998,7 +998,7 @@ def runWorkflow(**kargs):
                         regressor_with_confounders = sm.OLS(y, regression_x_df_drop)
 
                     # result = regressor_with_confounders.fit(skip_hessian=True)
-                    result = regressor_with_confounders.fit()
+                    result = regressor_with_confounders.fit_regularized(alpha=1e-7)
 
                 except Exception as inst:
 
@@ -1055,7 +1055,7 @@ def runWorkflow(**kargs):
                                 regressor_with_confounders = sm.OLS(y, regression_p_df_drop)
 
                             # result = regressor_with_confounders.fit(skip_hessian=True)
-                            result_p = regressor_with_confounders.fit()
+                            result_p = regressor_with_confounders.fit_regularized(alpha=1e-7)
 
                         except Exception as inst:
 
