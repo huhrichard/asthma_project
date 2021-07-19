@@ -788,6 +788,7 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
                 pset_pollutant_dict[joined_str] = pe_array
 
         interactions_df = pd.DataFrame(pset_pollutant_dict)
+        print(np.matmul(pollutants_indicators, interactions_df.values.T))
         interactions_df = 2 * interactions_df - 1
     else:
         interactions_df = None
