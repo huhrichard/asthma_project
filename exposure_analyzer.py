@@ -998,9 +998,7 @@ def runWorkflow(**kargs):
                         regressor_with_confounders = sm.OLS(y, regression_x_df_drop)
 
                     # result = regressor_with_confounders.fit(skip_hessian=True)
-                    result = regressor_with_confounders.fit_regularized(method='newton',
-                                                                        alpha=1e-7,
-                                                                        skip_hessian=True)
+                    result = regressor_with_confounders.fit(method='newton',skip_hessian=True)
 
                 except Exception as inst:
 
@@ -1008,9 +1006,7 @@ def runWorkflow(**kargs):
                     print('throwing to exception')
                     if binary_outcome:
                         regressor_with_confounders = sm.Logit(y, regression_x_df_drop)
-                        result = regressor_with_confounders.fit_regularized(method='newton',
-                                                                                  alpha=1e-7,
-                                                                                  skip_hessian=True)
+                        result = regressor_with_confounders.fit_regularized(alpha=1e-7)
                     else:
                         regressor_with_confounders = sm.OLS(y, regression_x_df_drop)
                         result = regressor_with_confounders.fit()
@@ -1059,9 +1055,7 @@ def runWorkflow(**kargs):
                                 regressor_with_confounders = sm.OLS(y, regression_p_df_drop)
 
                             # result = regressor_with_confounders.fit(skip_hessian=True)
-                            result_p = regressor_with_confounders.fit_regularized(method='newton',
-                                                                                  alpha=1e-7,
-                                                                                  skip_hessian=True)
+                            result_p = regressor_with_confounders.fit(method='newton',skip_hessian=True)
 
                         except Exception as inst:
 
@@ -1069,10 +1063,7 @@ def runWorkflow(**kargs):
                             print('throwing to exception')
                             if binary_outcome:
                                 regressor_with_confounders = sm.Logit(y, regression_p_df_drop, method='bfgs')
-                                result_p = regressor_with_confounders.fit_regularized(method='newton',
-                                                                                  alpha=1e-7,
-                                                                                  skip_hessian=True)
-                            else:
+                                result_p = regressor_with_confounders.fit_regularized(alpha=1e-7)
                                 regressor_with_confounders = sm.OLS(y, regression_p_df_drop)
                                 result_p = regressor_with_confounders.fit()
                         # result_summary = result.summary()
