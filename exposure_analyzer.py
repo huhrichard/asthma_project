@@ -1044,9 +1044,9 @@ def runWorkflow(**kargs):
                         try:
                             X_np = np.array(regression_p_df_drop)
                             X_corr = np.corrcoef(X_np, rowvar=0)
-                            # print(X_corr)
+                            print(X_corr)
                             w, v = np.linalg.eig(X_corr)
-                            # print('{} eigenvalues: {}'.format(profile, w))
+                            print('{} eigenvalues: {}'.format(interaction ,w))
                             # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
                             # regression_p_df_drop['intercept'] = 1.0
                             if binary_outcome:
