@@ -785,14 +785,14 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
                 pe_array = np.ones((X.shape[0]))
                 for element in pe:
                     pe_array = pe_array * (p_df[element].values)
+                for element in pe:
+                    diff = sum(p_df[element].values - pe_array)
+                    print(joined_str, element, ' diff: ' , diff)
+
                 pset_pollutant_dict[joined_str] = pe_array
 
+
         interactions_df = pd.DataFrame(pset_pollutant_dict)
-        if interactions_df.shape[1] == 1:
-            multi = np.array([interactions_df.values])
-        else:
-            multi = interactions_df.values
-        print(np.matmul(pollutants_indicators.T, multi))
         interactions_df = 2 * interactions_df - 1
     else:
         interactions_df = None
@@ -958,7 +958,7 @@ def runWorkflow(**kargs):
             table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
             outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
 
-        confounders_df.drop(columns=['race/ethnicity_White'], inplace=True)
+        # confounders_df.drop(columns=['race/ethnicity_White'], inplace=True)
         for idx, (profile, profile_occurrence) in enumerate(sorted_paths):
             # print(y)
             # print(profile_counter)
