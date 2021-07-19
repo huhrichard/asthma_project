@@ -957,6 +957,8 @@ def runWorkflow(**kargs):
             table_count = 0
             table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
             outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
+
+        confounders_df.drop(columns='race/ethnicity_White', inplace=True)
         for idx, (profile, profile_occurrence) in enumerate(sorted_paths):
             # print(y)
             # print(profile_counter)
