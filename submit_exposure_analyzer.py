@@ -25,7 +25,7 @@ outcome_binary_dict = {
 
 for outcome in outcome_binary_dict:
     lsf_str = "#!/bin/bash\n#BSUB -J asthma_project\n#BSUB -P acc_pandeg01a\n#BSUB -q express\n" \
-              "#BSUB -n 4\n#BSUB -W 12:00\n#BSUB -o analyzer_%J.stdout\n#BSUB -eo analyzer_%J.stderr\n" \
+              "#BSUB -n 4\n#BSUB -W 2:00\n#BSUB -o analyzer_%J.stdout\n#BSUB -eo analyzer_%J.stderr\n" \
               "#BSUB -R rusage[mem=10000]\nmodule purge\n"
     outcome_replaced = outcome.replace('(', '\(').replace(')', '\)')
     python_cmd = "python exposure_analyzer.py {} {}".format(outcome_replaced, suffix)
