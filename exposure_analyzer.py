@@ -1077,8 +1077,9 @@ def runWorkflow(**kargs):
                                 skip_bool = True
 
                         if skip_bool == False:
+                            condition_p = list(profile_dict['conditions_set'][i_idx])
                             regression_pollutants_df = pd.concat([interactions_df[[interaction]],
-                                                                  profile_dict['pollutants_df'][[profile_dict['conditions_set'][i_idx]]],
+                                                                  profile_dict['pollutants_df'][condition_p],
                                                                   confounders_df], axis=1)
 
                             # regression_pollutants_df = regression_pollutants_df[interactions_df[[interaction]]]
