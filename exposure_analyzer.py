@@ -1079,7 +1079,7 @@ def runWorkflow(**kargs):
                                                                   profile_dict['pollutants_df'],
                                                                   confounders_df], axis=1)
 
-                            regression_pollutants_df = regression_pollutants_df[interactions_df[[interaction]]]
+                            # regression_pollutants_df = regression_pollutants_df[interactions_df[[interaction]]]
                             regression_p_df_drop = regression_pollutants_df.drop(all_equal_drop_col, axis=1)
                             regression_p_df_drop = regression_p_df_drop.loc[condition_df[[condition]]]
                             y_cond = y[condition_df[[condition]]]
