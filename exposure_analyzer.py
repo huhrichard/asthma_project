@@ -752,7 +752,10 @@ def powerset(s):
 
 def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, sep='\t'):
     profile_indicator = np.ones((X.shape[0]))
-    number_pollutants = len(path.split(sep))
+    pollutant_by_order = path.split(sep)
+    pollutant_ordered = path.split(sep)
+    number_pollutants = len(pollutant_by_order)
+
     pollutants_indicators = np.ones((X.shape[0], number_pollutants))
     # pollutants_interactions = []
     # for i in range(1,number_pollutants):
@@ -763,7 +766,7 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
 
     node_list = []
     neg_value = 0
-    for n_idx, node_with_sign in enumerate(path.split(sep)):
+    for n_idx, node_with_sign in enumerate(pollutant_by_order):
         node = node_with_sign.replace(sign_pair[0], '').replace(sign_pair[1], '')
         node_list.append(node_with_sign)
         if sign_pair[0] in node_with_sign:
@@ -778,27 +781,47 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
     p_df = pd.DataFrame(pollutants_indicators, columns=node_list)
     pset_pollutant = powerset(node_list)
     completely_same = []
-    if number_pollutants > 1:
+    stacked_pollutant = []
+
+
+    if number_pollutants > 2:
+
         pset_pollutant_dict = {}
-        for pe in pset_pollutant:
-            if (len(pe) > 1):
-                joined_str = '_and_'.join(pe)
+        condition_set_pollutant_dict = {}
+        # for pe in pset_pollutant:
+        #     if (len(pe) > 1):
+        for pidx in range(number_pollutants):
+            if pollutant_by_order > 1:
+                stacked_pollutant.append(pollutant_by_order.pop())
+    
+                joined_str = '_and_'.join(pollutant_by_order)
                 pe_array = np.ones((X.shape[0]))
-                for element in pe:
+                subpop_array = np.ones((X.shape[0]))
+                for element in pollutant_by_order:
                     pe_array = pe_array * (p_df[element].values)
-                for element in pe:
-                    diff = sum(p_df[element].values - pe_array)
+
+                for element in stacked_pollutant:
+                    subpop_array = subpop_array * (p_df[element].values)
+
+                diff = 1
+                for element in pollutant_by_order:
+                    diff = min([sum(p_df[element].values - pe_array), diff])
                     print(joined_str, element, ' diff: ' , diff)
                     if diff == 0:
                         completely_same.append([joined_str, element])
 
                 pset_pollutant_dict[joined_str] = pe_array
+                condition_set_pollutant_dict['_and_'.join(stacked_pollutant)] = subpop_array
 
 
         interactions_df = pd.DataFrame(pset_pollutant_dict)
         interactions_df = 2 * interactions_df - 1
+
+        condition_df = pd.DataFrame(condition_set_pollutant_dict)
+        condition_df = 2 * condition_df - 1
     else:
         interactions_df = None
+        condition_df = None
 
     profile_indicator = 2*profile_indicator - 1
     p_df = 2*p_df - 1
@@ -809,7 +832,10 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
     return {'comb': profile_indicator,
             'pollutants_df': p_df,
             'interactions_df': interactions_df,
-            'identical_profiles': completely_same
+            'condition_df': condition_df,
+            'identical_profiles': completely_same,
+            'number_of_pollutant': number_pollutants,
+            'pollutant_by_order': pollutant_ordered
             }
 
 
@@ -1029,17 +1055,20 @@ def runWorkflow(**kargs):
                 p_val = result.pvalues.values[0]
 
                 interactions_df = profile_dict['interactions_df']
+                condition_df = profile_dict['condition_df']
                 interactions_pv = []
                 interactions = []
                 identical_to_single = profile_dict['identical_profiles']
                 # if p_val < 0.05:
                 if not(interactions_df is None):
                     interactions = interactions_df.columns
+                    conditions = condition_df.columns
 
                     # interactions_or =
 
-                    for interaction in interactions:
-                        print(interaction)
+                    for i_idx, interaction in enumerate(interactions):
+                        condition = conditions[i_idx]
+                        print(condition, interaction)
                         skip_bool = False
                         for identical in identical_to_single:
                             if interaction == identical[0]:
@@ -1049,7 +1078,12 @@ def runWorkflow(**kargs):
                             regression_pollutants_df = pd.concat([interactions_df[[interaction]],
                                                                   profile_dict['pollutants_df'],
                                                                   confounders_df], axis=1)
+
+                            regression_pollutants_df = regression_pollutants_df[interactions_df[[interaction]]]
                             regression_p_df_drop = regression_pollutants_df.drop(all_equal_drop_col, axis=1)
+                            regression_p_df_drop = regression_p_df_drop.loc[condition_df[[condition]]]
+                            y_cond = y[condition_df[[condition]]]
+
                             from sklearn.preprocessing import StandardScaler
                             scaler = StandardScaler()
                             regression_p_df_drop[:] = scaler.fit_transform(regression_p_df_drop)
@@ -1063,9 +1097,9 @@ def runWorkflow(**kargs):
                                 # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
                                 # regression_p_df_drop['intercept'] = 1.0
                                 if binary_outcome:
-                                    regressor_with_confounders = sm.Logit(y, regression_p_df_drop)
+                                    regressor_with_confounders = sm.Logit(y_cond, regression_p_df_drop)
                                 else:
-                                    regressor_with_confounders = sm.OLS(y, regression_p_df_drop)
+                                    regressor_with_confounders = sm.OLS(y_cond, regression_p_df_drop)
 
                                 # result = regressor_with_confounders.fit(skip_hessian=True)
                                 result_p = regressor_with_confounders.fit(method='newton',skip_hessian=True)
@@ -1075,10 +1109,10 @@ def runWorkflow(**kargs):
                                 # regression_p_df_drop['intercept'] = 1.0
                                 print('throwing to exception')
                                 if binary_outcome:
-                                    regressor_with_confounders = sm.Logit(y, regression_p_df_drop, method='bfgs')
+                                    regressor_with_confounders = sm.Logit(y_cond, regression_p_df_drop, method='bfgs')
                                     result_p = regressor_with_confounders.fit_regularized(alpha=1e-3)
                                 else:
-                                    regressor_with_confounders = sm.OLS(y, regression_p_df_drop)
+                                    regressor_with_confounders = sm.OLS(y_cond, regression_p_df_drop)
                                     result_p = regressor_with_confounders.fit()
                             # result_summary = result.summary()
                             print(result_p.summary())
