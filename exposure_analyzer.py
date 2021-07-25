@@ -782,18 +782,19 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
     pset_pollutant = powerset(node_list)
     completely_same = []
     stacked_pollutant = []
-
+    conditions_set = []
 
     if number_pollutants > 2:
 
         pset_pollutant_dict = {}
         condition_set_pollutant_dict = {}
+
         # for pe in pset_pollutant:
         #     if (len(pe) > 1):
         for pidx in range(number_pollutants):
             if len(pollutant_by_order) > 1:
                 stacked_pollutant.append(pollutant_by_order.pop())
-
+                conditions_set.append(stacked_pollutant)
                 joined_str = '_and_'.join(pollutant_by_order)
                 pe_array = np.ones((X.shape[0]))
                 subpop_array = np.ones((X.shape[0]))
@@ -835,7 +836,8 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
             'condition_df': condition_df,
             'identical_profiles': completely_same,
             'number_of_pollutant': number_pollutants,
-            'pollutant_by_order': pollutant_ordered
+            'pollutant_by_order': pollutant_ordered,
+            'conditions_set': conditions_set
             }
 
 
@@ -1076,7 +1078,7 @@ def runWorkflow(**kargs):
 
                         if skip_bool == False:
                             regression_pollutants_df = pd.concat([interactions_df[[interaction]],
-                                                                  profile_dict['pollutants_df'],
+                                                                  profile_dict['pollutants_df'][[profile_dict['conditions_set'][i_idx]]],
                                                                   confounders_df], axis=1)
 
                             # regression_pollutants_df = regression_pollutants_df[interactions_df[[interaction]]]
@@ -1105,6 +1107,7 @@ def runWorkflow(**kargs):
                             regression_p_df_drop[:] = scaler.fit_transform(regression_p_df_drop)
 
                             print(regression_p_df_drop)
+                            print(regression_p_df_drop.columns)
 
                             try:
                                 X_np = np.array(regression_p_df_drop)
@@ -1114,7 +1117,7 @@ def runWorkflow(**kargs):
                                 w, v = np.linalg.eig(X_corr)
                                 print('{} eigenvalues: {}'.format(interaction ,w))
                                 # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
-                                # regression_p_df_drop['intercept'] = 1.0
+                                regression_p_df_drop['intercept'] = 1.0
                                 if binary_outcome:
                                     regressor_with_confounders = sm.Logit(y_cond, regression_p_df_drop)
                                 else:
@@ -1125,7 +1128,7 @@ def runWorkflow(**kargs):
 
                             except Exception as inst:
 
-                                # regression_p_df_drop['intercept'] = 1.0
+                                regression_p_df_drop['intercept'] = 1.0
                                 print('throwing to exception')
                                 if binary_outcome:
                                     regressor_with_confounders = sm.Logit(y_cond, regression_p_df_drop, method='bfgs')
