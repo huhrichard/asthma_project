@@ -1080,10 +1080,19 @@ def runWorkflow(**kargs):
                                                                   confounders_df], axis=1)
 
                             # regression_pollutants_df = regression_pollutants_df[interactions_df[[interaction]]]
+
+
                             regression_p_df_drop = regression_pollutants_df.drop(all_equal_drop_col, axis=1)
                             cond_bool = condition_df[condition] > 0
+                            print(cond_bool)
                             regression_p_df_drop = regression_p_df_drop.loc[cond_bool]
                             y_cond = y[cond_bool.values]
+
+                            all_equal_drop_col_temp = []
+                            for col in regression_x_df:
+                                unique_value = regression_x_df[col].unique()
+                                if len(unique_value) == 1:
+                                    all_equal_drop_col_temp.append(col)
 
                             from sklearn.preprocessing import StandardScaler
                             scaler = StandardScaler()
