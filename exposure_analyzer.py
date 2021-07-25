@@ -1091,7 +1091,7 @@ def runWorkflow(**kargs):
                             all_equal_drop_col_temp = []
                             for col in regression_p_df_drop:
                                 if col in confounders_df.columns:
-                                    unique_value = regression_x_df[col].unique()
+                                    unique_value = regression_p_df_drop[col].unique()
                                     if len(unique_value) == 1:
                                         all_equal_drop_col_temp.append(col)
 
