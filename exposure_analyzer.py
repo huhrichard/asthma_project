@@ -1081,8 +1081,9 @@ def runWorkflow(**kargs):
 
                             # regression_pollutants_df = regression_pollutants_df[interactions_df[[interaction]]]
                             regression_p_df_drop = regression_pollutants_df.drop(all_equal_drop_col, axis=1)
-                            regression_p_df_drop = regression_p_df_drop.loc[condition_df[[condition]]]
-                            y_cond = y[condition_df[[condition]]]
+                            cond_bool = condition_df[[condition]] > 0
+                            regression_p_df_drop = regression_p_df_drop.loc[cond_bool]
+                            y_cond = y[cond_bool.values]
 
                             from sklearn.preprocessing import StandardScaler
                             scaler = StandardScaler()
