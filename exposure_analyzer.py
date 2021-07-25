@@ -1094,6 +1094,8 @@ def runWorkflow(**kargs):
                                 if len(unique_value) == 1:
                                     all_equal_drop_col_temp.append(col)
 
+                            regression_p_df_drop = regression_p_df_drop.drop(all_equal_drop_col, axis=1)
+
                             from sklearn.preprocessing import StandardScaler
                             scaler = StandardScaler()
                             regression_p_df_drop[:] = scaler.fit_transform(regression_p_df_drop)
