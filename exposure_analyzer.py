@@ -1088,6 +1088,8 @@ def runWorkflow(**kargs):
                             regression_p_df_drop = regression_p_df_drop.loc[cond_bool]
                             y_cond = y[cond_bool.values]
 
+
+
                             all_equal_drop_col_temp = []
                             for col in regression_p_df_drop:
                                 if col in confounders_df.columns:
@@ -1097,14 +1099,18 @@ def runWorkflow(**kargs):
 
                             regression_p_df_drop = regression_p_df_drop.drop(all_equal_drop_col_temp, axis=1)
 
+
                             from sklearn.preprocessing import StandardScaler
                             scaler = StandardScaler()
                             regression_p_df_drop[:] = scaler.fit_transform(regression_p_df_drop)
+
+                            print(regression_p_df_drop)
 
                             try:
                                 X_np = np.array(regression_p_df_drop)
                                 X_corr = np.corrcoef(X_np, rowvar=0)
                                 print(X_corr)
+                                print(X_corr.shape)
                                 w, v = np.linalg.eig(X_corr)
                                 print('{} eigenvalues: {}'.format(interaction ,w))
                                 # result = regressor_with_confounders.fit(maxiter=500, method='bfgs')
