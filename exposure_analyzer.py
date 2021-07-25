@@ -1089,12 +1089,13 @@ def runWorkflow(**kargs):
                             y_cond = y[cond_bool.values]
 
                             all_equal_drop_col_temp = []
-                            for col in regression_x_df:
-                                unique_value = regression_x_df[col].unique()
-                                if len(unique_value) == 1:
-                                    all_equal_drop_col_temp.append(col)
+                            for col in regression_p_df_drop:
+                                if col in confounders_df.columns:
+                                    unique_value = regression_x_df[col].unique()
+                                    if len(unique_value) == 1:
+                                        all_equal_drop_col_temp.append(col)
 
-                            regression_p_df_drop = regression_p_df_drop.drop(all_equal_drop_col, axis=1)
+                            regression_p_df_drop = regression_p_df_drop.drop(all_equal_drop_col_temp, axis=1)
 
                             from sklearn.preprocessing import StandardScaler
                             scaler = StandardScaler()
