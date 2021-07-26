@@ -793,7 +793,7 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
         #     if (len(pe) > 1):
         for pidx in range(number_pollutants):
             if len(pollutant_by_order) > 1:
-                stacked_pollutant.append(pollutant_by_order.pop())
+                stacked_pollutant.append(pollutant_by_order.pop(0))
                 # print(st)
                 conditions_set.append(pollutant_by_order)
                 print(stacked_pollutant[-1])
