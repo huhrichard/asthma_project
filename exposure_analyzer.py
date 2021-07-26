@@ -1130,23 +1130,16 @@ def runWorkflow(**kargs):
                                     regressor_with_confounders = sm.OLS(y_cond, regression_p_df_drop)
 
                                 # result = regressor_with_confounders.fit(skip_hessian=True)
-                                result_p = regressor_with_confounders.fit(method='newton',skip_hessian=True)
+                                result_p = regressor_with_confounders.fit_regularized(alpha=1e-3)
+                                print(result_p.summary())
 
-                            except Exception as inst:
+                                p_val_int = result_p.pvalues.values[0]
+                                interactions_pv.append(p_val_int)
 
-                                regression_p_df_drop['intercept'] = 1.0
-                                print('throwing to exception')
-                                if binary_outcome:
-                                    regressor_with_confounders = sm.Logit(y_cond, regression_p_df_drop, method='bfgs')
-                                    result_p = regressor_with_confounders.fit_regularized(alpha=1e-3)
-                                else:
-                                    regressor_with_confounders = sm.OLS(y_cond, regression_p_df_drop)
-                                    result_p = regressor_with_confounders.fit()
-                            # result_summary = result.summary()
-                            print(result_p.summary())
+                            except np.linalg.LinAlgError:
+                                # p_val_int = 1
+                                interactions_pv.append('repeated')
 
-                            p_val_int = result_p.pvalues.values[0]
-                            interactions_pv.append(p_val_int)
 
                 params = result.params
                 conf = result.conf_int()
