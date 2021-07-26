@@ -1078,6 +1078,7 @@ def runWorkflow(**kargs):
 
                         if skip_bool == False:
                             condition_p = list(profile_dict['conditions_set'][i_idx])
+                            print(condition_p)
                             regression_pollutants_df = pd.concat([interactions_df[[interaction]],
                                                                   profile_dict['pollutants_df'][condition_p],
                                                                   confounders_df], axis=1)
@@ -1094,6 +1095,7 @@ def runWorkflow(**kargs):
 
 
                             all_equal_drop_col_temp = []
+
                             for col in regression_p_df_drop:
                                 if col in confounders_df.columns:
                                     unique_value = regression_p_df_drop[col].unique()
