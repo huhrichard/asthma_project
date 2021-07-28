@@ -784,7 +784,7 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
     stacked_pollutant = []
     conditions_set = []
 
-    if number_pollutants > 2:
+    if number_pollutants > 1:
 
         pset_pollutant_dict = {}
         condition_set_pollutant_dict = {}
@@ -792,9 +792,18 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
         # for pe in pset_pollutant:
         #     if (len(pe) > 1):
         for pidx in range(number_pollutants):
-            if len(pollutant_by_order) > 2:
+            append_bool = True
+            if (number_pollutants > 2) and (len(pollutant_by_order) > 2):
                 stacked_pollutant.append(pollutant_by_order.pop(0))
                 # print(st)
+
+            elif number_pollutants == 2 and (len(pollutant_by_order) == 2):
+                stacked_pollutant.append('')
+                # pollutant_by_order.pop(0)
+            else:
+                append_bool = False
+
+            if append_bool:
                 conditions_set.append(pollutant_by_order)
                 print(stacked_pollutant[-1])
                 print(conditions_set[-1])
@@ -804,8 +813,9 @@ def profile_indicator_function(path, feature_idx, path_threshold, X, sign_pair, 
                 for element in pollutant_by_order:
                     pe_array = pe_array * (p_df[element].values)
 
-                for element in stacked_pollutant:
-                    subpop_array = subpop_array * (p_df[element].values)
+                if stacked_pollutant[-1] != '':
+                    for element in stacked_pollutant:
+                        subpop_array = subpop_array * (p_df[element].values)
 
                 diff = 1
                 for element in pollutant_by_order:
@@ -991,7 +1001,10 @@ def runWorkflow(**kargs):
         if xgb_predict:
             tree_counts = {}
             table_count = 0
-            table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
+            # table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
+            # outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
+
+            table_draw_tree_df = pd.read_csv('fdr_nbt_single_27Jul.csv')
             outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
 
         # confounders_df.drop(columns=['race/ethnicity_White'], inplace=True)
@@ -1080,8 +1093,10 @@ def runWorkflow(**kargs):
                                 skip_bool = True
 
                         if skip_bool == False:
+
                             condition_p = list(profile_dict['conditions_set'][i_idx])
                             print(condition_p)
+
                             regression_pollutants_df = pd.concat([interactions_df[[interaction]],
                                                                   profile_dict['pollutants_df'][condition_p],
                                                                   confounders_df], axis=1)
