@@ -1004,7 +1004,7 @@ def runWorkflow(**kargs):
             # table_draw_tree_df = pd.read_csv('table_nbt_single_figure.csv')
             # outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
 
-            table_draw_tree_df = pd.read_csv('fdr_nbt_single_27Jul.csv')
+            table_draw_tree_df = pd.read_csv('fdr_nbt_single.csv')
             outcome_table_bool = (table_draw_tree_df['outcome'] == outcome_folder_name)
 
         # confounders_df.drop(columns=['race/ethnicity_White'], inplace=True)
@@ -1185,8 +1185,8 @@ def runWorkflow(**kargs):
                         profile_group = 'mixed_sign_multi_pollutants'
                     elif profile_str.count('\t') == 0:
                         profile_group = 'single_pollutant'
-
-                    if xgb_predict:
+                    draw_false= False
+                    if draw_false:
                         # if (profile_group == 'all_greater') or (profile_group == 'single_pollutant'):
                         profile_table_bool = (table_draw_tree_df['profile'] == topk_profile_str[idx])
                         # print(topk_profile_str[idx])
