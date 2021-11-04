@@ -58,3 +58,4 @@ pollutant_list = pollutant_name.split('y')
 plt.show()
 
 fig.savefig("{}_histogram.png".format(pollutant_name))
+

@@ -628,7 +628,7 @@ def count_paths_with_thres_sign_from_xgb(estimator,
                                 paths_from = {},
                                 labels = {},
                                 merge_labels=True, to_str=False,
-                                sep=' ', verbose=True, index=0, multiple_counts=True):
+                                sep=' ', verbose=True, index=0, multiple_counts=False):
     feature_threshold_count = {}
     boosters = estimator.get_booster().get_dump()
     counted_path = set()
